@@ -353,7 +353,7 @@
 
   <!-- ================= 头部 ================= -->
   <header class="lncx-hero">
-    <div class="lncx-eyebrow"><span class="lncx-dot"></span>用户脚本 · v2.3.0</div>
+    <div class="lncx-eyebrow"><span class="lncx-dot"></span>用户脚本 · v2.4.0</div>
 
     <h1 class="lncx-title">路南云 · 学习通 AI 研习助手</h1>
 
@@ -405,7 +405,7 @@
       <div class="lncx-cell">
         <span class="lncx-idx">04</span>
         <h3>多接口管理</h3>
-        <p>路南云代理、DeepSeek、OpenAI、Ollama 可同时存在，分别设置默认与当前使用。</p>
+        <p>DeepSeek、OpenAI、Ollama 或任意 OpenAI 兼容接口可同时存在，分别设置默认与当前使用。</p>
       </div>
       <div class="lncx-cell">
         <span class="lncx-idx">05</span>
@@ -444,17 +444,23 @@
         <span class="lncx-step-n">3</span>
         <div>
           <h3>打开学习通页面</h3>
-          <p>右侧出现竖排「研习」按钮，点击展开面板。首次使用需在 <b>设置 → AI 接口</b> 里填授权码或自己的 API。</p>
+          <p>右侧会出现竖排「研习」按钮，点击展开面板。拖动竖条可以上下调整位置，面板不遮挡课件。</p>
+        </div>
+      </div>
+      <div class="lncx-step">
+        <span class="lncx-step-n">4</span>
+        <div>
+          <h3>填入自己的 AI 接口</h3>
+          <p>打开面板 → <b>设置 → AI 接口</b>，新增一个配置，填写 <code>chat/completions</code> 地址与 API Key，选择模型即可答题。</p>
         </div>
       </div>
     </div>
 
     <div class="lncx-note">
       <p>
-        <b>关于授权码。</b>路南云代理需要授权码才能加载远程 AI 配置，脚本本身不含任何密钥。
-        在面板「设置 → AI 接口 → 路南云代理 → 授权码」里粘贴即可；
-        也可以访问任意学习通页面时附加 <code>?cxauth=授权码</code>，脚本会自动写入并从地址栏清除。
-        不想用代理的话，直接在设置里填自己的 OpenAI 兼容接口地址与 Key。
+        <b>脚本不自带 AI 服务。</b>它只是一层界面，所有回答都由你自己填入的接口生成，脚本本身不含任何密钥。
+        支持 DeepSeek、OpenAI、Ollama 以及任何 OpenAI 兼容地址（第三方中转、自建网关都可以），
+        地址要写到完整的 <code>/chat/completions</code>。多个接口能同时存在，打开「容灾切换」后某个接口失败会自动换下一个。
       </p>
     </div>
   </section>
@@ -473,10 +479,10 @@
         </p>
       </details>
       <details>
-        <summary>答题提示「未配置授权码」？</summary>
+        <summary>答题提示「AI 未配置」？</summary>
         <p>
-          说明路南云代理还没拿到授权码。到设置里粘贴授权码，或改用自有 API：
-          填写接口地址（需是完整的 chat/completions 地址）与 Key，点「获取模型列表」选择模型即可。
+          说明还没有可用的接口。到「设置 → AI 接口」新增一个配置，填写完整的接口地址与 API Key，
+          点「获取模型列表」选中模型。Ollama 这类本地服务不需要 Key，只要地址填对即可。
         </p>
       </details>
       <details>

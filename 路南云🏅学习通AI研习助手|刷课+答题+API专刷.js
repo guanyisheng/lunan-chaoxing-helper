@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         路南云🏅学习通AI研习助手|刷课+答题+API专刷
 // @namespace    http://tampermonkey.net/
-// @version      2.3.0
+// @version      2.4.0
 // @description  mooc1 答题侧边栏（作业 dowork 页优先顶层挂载）；极简主题、多 API 配置、容灾切换、流式答题日志。支持菜单手动重载；作业页可选粘贴解除。
 // @author       Lunan
 // @match        *://*.chaoxing.com/*
@@ -15,7 +15,6 @@
 // @grant        GM_getResourceText
 // @grant        GM_info
 // @grant        GM_registerMenuCommand
-// @connect      h5.lunan.cloud
 // @connect      tc.lunan.cloud
 // @connect      sso.chaoxing.com
 // @connect      mooc1-api.chaoxing.com
@@ -197,11 +196,8 @@ logger.info('System initialization completed');
 const CX_PAGE = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
 if (CX_PAGE.__cxHelperFrameLoaded) return;
 CX_PAGE.__cxHelperFrameLoaded = true;
-try { console.info('[路南云研习助手] 脚本已注入 v2.2.5 |', location.hostname, location.pathname); } catch {}
+try { console.info('[路南云研习助手] 脚本已注入 v2.4.0 |', location.hostname, location.pathname); } catch {}
 const CONTACT_EMAIL = 'verify@lunan.cloud';
-const AI_CONFIG_CACHE_KEY = 'cx_helper_ai_public_cfg_v2';
-const AI_CONFIG_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const AI_CONFIG_REFRESH_MS = 60 * 60 * 1000;
 const PASTE_UNLOCK_KEY = 'cx_paste_unlock_enabled';
 const ANSWER_ACCURACY_KEY = 'cx_helper_answer_accuracy';
 const DEFAULT_ANSWER_ACCURACY = 100;
@@ -640,96 +636,8 @@ if (isPasteUnlockEnabled() && isPasteUnlockWorkPage(location.href)) {
     initPasteUnlockModule(CX_PAGE);
 }
 
-function _getRemoteConfigUrl() {
-return atob('aHR0cHM6Ly9oNS5sdW5hbi5jbG91ZC9hcGkvYWktY29uZmlnLnBocA==');
-}
-
-/* 代理授权码：不再硬编码，改为运行时存储在本地（可粘贴或通过 ?cxauth= 一次性激活） */
-const PROXY_AUTH_STORAGE_KEY = 'cx_helper_proxy_auth_v1';
-
-function getProxyAuthKey() {
-    try {
-        const stored = localStorage.getItem(PROXY_AUTH_STORAGE_KEY);
-        if (!stored) return '';
-        try { return atob(stored); } catch { return stored; }
-    } catch { return ''; }
-}
-
-function setProxyAuthKey(raw) {
-    const value = String(raw || '').trim();
-    try {
-        if (!value) localStorage.removeItem(PROXY_AUTH_STORAGE_KEY);
-        else localStorage.setItem(PROXY_AUTH_STORAGE_KEY, btoa(value));
-    } catch {}
-}
-
-function hasProxyAuthKey() {
-    return !!getProxyAuthKey();
-}
-
-function absorbProxyAuthFromUrl() {
-    try {
-        const u = new URL(location.href);
-        const v = u.searchParams.get('cxauth');
-        if (!v) return false;
-        setProxyAuthKey(v);
-        u.searchParams.delete('cxauth');
-        const clean = u.pathname + (u.search ? u.search : '') + u.hash;
-        try { history.replaceState(history.state, '', clean); } catch {}
-        return true;
-    } catch { return false; }
-}
-
-absorbProxyAuthFromUrl();
-
-function _getRemoteConfigAuth() {
-    return getProxyAuthKey();
-}
-
-function readCachedAiConfig() {
-try {
-    let raw = localStorage.getItem(AI_CONFIG_CACHE_KEY);
-    if (!raw) {
-        raw = sessionStorage.getItem('cx_helper_ai_public_cfg');
-        if (raw) {
-            try { localStorage.setItem(AI_CONFIG_CACHE_KEY, raw); sessionStorage.removeItem('cx_helper_ai_public_cfg'); } catch {}
-        }
-    }
-    if (!raw) return null;
-    const item = JSON.parse(raw);
-    if (!item || !item.cfg || item.expiry <= Date.now()) return null;
-    return item.cfg;
-} catch { return null; }
-}
-
-function writeCachedAiConfig(cfg) {
-try {
-    localStorage.setItem(AI_CONFIG_CACHE_KEY, JSON.stringify({
-        cfg,
-        expiry: Date.now() + AI_CONFIG_CACHE_TTL_MS,
-        savedAt: Date.now()
-    }));
-} catch {}
-}
-
-function shouldRefreshCachedAiConfig() {
-try {
-    const raw = localStorage.getItem(AI_CONFIG_CACHE_KEY);
-    if (!raw) return true;
-    const item = JSON.parse(raw);
-    if (!item || !item.savedAt) return true;
-    return Date.now() - item.savedAt > AI_CONFIG_REFRESH_MS;
-} catch { return true; }
-}
-
 const API_MGR_STORAGE_KEY = 'cx_helper_api_mgr_v4';
-const LUNAN_PROXY_API_ID = 'api_lunan_proxy';
 const API_PRESETS = {
-lunan: {
-    name: '路南云代理',
-    url: '',
-    models: [{ label: '远程模型', model: '', context: '' }]
-},
 openai: {
     name: 'OpenAI',
     url: 'https://api.openai.com/v1/chat/completions',
@@ -751,26 +659,7 @@ function genApiId() {
 return 'api_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
 }
 
-function createLunanProxyEntry() {
-return {
-    id: LUNAN_PROXY_API_ID,
-    name: '路南云代理',
-    url: '',
-    apiKey: '',
-    provider: 'lunan',
-    models: [{ label: '远程模型', model: '', context: '' }],
-    selectedModelIndex: 0,
-    failoverEnabled: true,
-    enabled: true
-};
-}
-
-function isLunanProxyApi(api) {
-return !!(api && (api.provider === 'lunan' || api.provider === 'proxy' || api.id === LUNAN_PROXY_API_ID));
-}
-
 function createDefaultApiEntry(presetKey) {
-if (presetKey === 'lunan') return createLunanProxyEntry();
 const p = API_PRESETS[presetKey] || API_PRESETS.openai;
 return {
     id: genApiId(),
@@ -786,23 +675,22 @@ return {
 }
 
 function createDefaultApiManagerState() {
-const lunan = createLunanProxyEntry();
 const openai = createDefaultApiEntry('openai');
 openai.id = 'api_openai_default';
 return {
     failoverEnabled: true,
-    defaultApiId: lunan.id,
-    currentApiId: lunan.id,
-    apis: [lunan, openai]
+    defaultApiId: openai.id,
+    currentApiId: openai.id,
+    apis: [openai]
 };
 }
 
 function migrateApiManagerState(state) {
-if (!state || !Array.isArray(state.apis) || !state.apis.length) return createDefaultApiManagerState();
-if (!state.apis.some(a => isLunanProxyApi(a))) {
-    state.apis.unshift(createLunanProxyEntry());
-    if (!state.defaultApiId) state.defaultApiId = LUNAN_PROXY_API_ID;
-}
+if (!state || !Array.isArray(state.apis)) return createDefaultApiManagerState();
+state.apis = state.apis.filter(a => a && !(a.provider === 'lunan' || a.provider === 'proxy' || a.id === 'api_lunan_proxy'));
+if (!state.apis.length) return createDefaultApiManagerState();
+if (!state.apis.some(a => a.id === state.defaultApiId)) state.defaultApiId = state.apis[0].id;
+if (!state.apis.some(a => a.id === state.currentApiId)) state.currentApiId = state.apis[0].id;
 return state;
 }
 
@@ -861,51 +749,16 @@ const url = (api && api.url) || '';
 return /ollama|11434|localhost|127\.0\.0\.1/i.test(url) || (api && api.provider === 'ollama');
 }
 
-function isLunanRemoteReady() {
-if (!CUSTOM_AI_CONFIG) return false;
-const model = (CUSTOM_AI_CONFIG.model || '').trim();
-if (!model) return false;
-if (CUSTOM_AI_CONFIG.provider === 'proxy') return !!(CUSTOM_AI_CONFIG.chatUrl || '').trim();
-const base = (CUSTOM_AI_CONFIG.apiBase || '').trim();
-if (!base) return false;
-if (CUSTOM_AI_CONFIG.provider === 'ollama') return true;
-if (CUSTOM_AI_CONFIG.provider === 'openwebui') return !!(CUSTOM_AI_CONFIG.apiKey || '').trim();
-return !!(CUSTOM_AI_CONFIG.apiKey || '').trim() && CUSTOM_AI_CONFIG.apiKey !== 'sk-你的密钥';
-}
-
-function syncApiModelsFromRemote(api) {
-if (!isLunanProxyApi(api) || !CUSTOM_AI_CONFIG) return;
-const m = (CUSTOM_AI_CONFIG.model || '').trim();
-if (!m) return;
-const hasLocal = (api.models || []).some(x => (x.model || '').trim());
-if (!hasLocal) {
-    api.models = [{ label: m, model: m, context: '' }];
-    api.selectedModelIndex = 0;
-    saveApiManagerState();
-}
-}
-
 function getApiChatUrl(api) {
-if (isLunanProxyApi(api) && CUSTOM_AI_CONFIG) {
-    if (CUSTOM_AI_CONFIG.provider === 'proxy' && (CUSTOM_AI_CONFIG.chatUrl || '').trim()) {
-        return CUSTOM_AI_CONFIG.chatUrl.trim();
-    }
-    const base = (CUSTOM_AI_CONFIG.apiBase || '').replace(/\/$/, '');
-    const path = CUSTOM_AI_CONFIG.apiPath || '/chat/completions';
-    if (base) return base + path;
-}
 return (api && api.url || '').trim();
 }
 
 function getApiModel(api) {
-const local = getSelectedModel(api);
-if (isLunanProxyApi(api)) return local || (CUSTOM_AI_CONFIG && CUSTOM_AI_CONFIG.model) || '';
-return local;
+return getSelectedModel(api);
 }
 
 function isApiEntryConfigured(api) {
 if (!api || api.enabled === false) return false;
-if (isLunanProxyApi(api)) return isLunanRemoteReady() || api.enabled !== false;
 const model = getSelectedModel(api);
 if (!model) return false;
 const url = (api.url || '').trim();
@@ -940,16 +793,6 @@ return ordered;
 
 function buildHeadersForApi(api) {
 const headers = { 'Content-Type': 'application/json' };
-if (isLunanProxyApi(api)) {
-    if (!CUSTOM_AI_CONFIG || CUSTOM_AI_CONFIG.provider === 'proxy' || !(CUSTOM_AI_CONFIG.apiKey || '').trim()) {
-        const auth = getProxyAuthKey();
-        if (auth) headers['X-CX-Helper-Auth'] = auth;
-    } else {
-        const key = (CUSTOM_AI_CONFIG.apiKey || '').trim();
-        if (key) headers['Authorization'] = 'Bearer ' + key;
-    }
-    return headers;
-}
 const key = (api && api.apiKey || '').trim();
 if (key) headers['Authorization'] = 'Bearer ' + key;
 return headers;
@@ -970,7 +813,7 @@ return url + '/models';
 }
 
 function getApiModelsEndpoint(api) {
-    const chatUrl = isLunanProxyApi(api) ? getApiChatUrl(api) : ((api && api.url) || '');
+    const chatUrl = (api && api.url) || '';
     return getModelsUrlFromChatUrl(chatUrl);
 }
 
@@ -992,7 +835,7 @@ let _cxFetchModelsTimer = null;
 const _cxAutoFetchedModelKeys = new Set();
 
 function canAutoDetectModels(api) {
-    if (!api || isLunanProxyApi(api)) return false;
+    if (!api) return false;
     if (!(api.url || '').trim()) return false;
     if (isOllamaLikeApi(api)) return true;
     return !!(api.apiKey || '').trim();
@@ -1107,7 +950,7 @@ const model = getApiModel(api);
 const url = getApiChatUrl(api);
 if (!url) return Promise.reject(new Error('API 地址未配置'));
 if (!model) return Promise.reject(new Error('模型未配置'));
-const timeoutMs = options.timeoutMs || (CUSTOM_AI_CONFIG && CUSTOM_AI_CONFIG.timeoutMs) || 120000;
+const timeoutMs = options.timeoutMs || 120000;
 return new Promise((resolve, reject) => {
     let lastLen = 0;
     let full = '';
@@ -1154,209 +997,43 @@ return new Promise((resolve, reject) => {
 }
 
 async function aiChatWithFailover(messages, options, onChunk) {
-await loadRemoteAiConfig().catch(() => {});
-
 const apis = getApisForFailover();
-if (!apis.length && !isCustomAiConfigured()) {
-    throw new Error('AI 未配置：请使用路南云代理或在设置中配置自有 API');
+if (!apis.length) {
+    throw new Error('AI 未配置：请在「设置 → AI 接口」中填写接口地址与 API Key');
 }
 
-if (apis.length) {
-    let lastErr = null;
-    for (let i = 0; i < apis.length; i++) {
-        const api = apis[i];
-        try {
-            if (isLunanProxyApi(api)) {
-                await loadRemoteAiConfig().catch(() => {});
-                if (!isLunanRemoteReady()) {
-                    throw new Error('路南云代理未就绪，请检查 h5.lunan.cloud/api/');
-                }
-                syncApiModelsFromRemote(api);
-            } else if (!isApiEntryConfigured(api)) {
-                continue;
-            }
-            if (i > 0) addLog('容灾切换 → ' + api.name, 'warn');
-            setActiveApiId(api.id);
-            const result = await streamChatForApi(api, messages, options, onChunk);
-            return { choices: [{ message: { content: result.content } }], _api: api };
-        } catch (e) {
-            lastErr = e;
-            if (i < apis.length - 1 && API_MANAGER.failoverEnabled) {
-                addLog('[' + api.name + '] 失败: ' + e.message, 'warn');
-            }
+let lastErr = null;
+for (let i = 0; i < apis.length; i++) {
+    const api = apis[i];
+    try {
+        if (i > 0) addLog('容灾切换 → ' + api.name, 'warn');
+        setActiveApiId(api.id);
+        const result = await streamChatForApi(api, messages, options, onChunk);
+        return { choices: [{ message: { content: result.content } }], _api: api };
+    } catch (e) {
+        lastErr = e;
+        if (i < apis.length - 1 && API_MANAGER.failoverEnabled) {
+            addLog('[' + api.name + '] 失败: ' + e.message, 'warn');
         }
     }
-    if (lastErr) throw lastErr;
 }
-
-if (isLunanRemoteReady() || isLocalApiManagerConfigured()) {
-    throw new Error('所有 API 均调用失败');
-}
-return deepseekChatLegacy(messages, options);
-}
-
-let CUSTOM_AI_CONFIG = readCachedAiConfig();
-let _aiConfigPromise = null;
-
-function requestRemoteAiConfig() {
-return new Promise((resolve, reject) => {
-    const auth = getProxyAuthKey();
-    if (!auth) {
-        reject(new Error('未配置路南云授权码'));
-        return;
-    }
-    GM_xmlhttpRequest({
-        method: 'GET',
-        url: _getRemoteConfigUrl(),
-        headers: { 'X-CX-Helper-Auth': auth },
-        timeout: 8000,
-        onload: (r) => {
-            if (r.status >= 200 && r.status < 300) {
-                try {
-                    CUSTOM_AI_CONFIG = JSON.parse(r.responseText);
-                    writeCachedAiConfig(CUSTOM_AI_CONFIG);
-                    resolve(CUSTOM_AI_CONFIG);
-                } catch (e) { reject(e); }
-            } else {
-                reject(new Error('加载远程配置失败 HTTP ' + r.status));
-            }
-        },
-        onerror: () => reject(new Error('无法连接配置服务器 h5.lunan.cloud')),
-        ontimeout: () => reject(new Error('加载远程配置超时'))
-    });
-});
-}
-
-async function loadRemoteAiConfig(force) {
-if (!force && _aiConfigPromise) return _aiConfigPromise;
-
-const cached = !force ? (CUSTOM_AI_CONFIG || readCachedAiConfig()) : null;
-if (cached) {
-    CUSTOM_AI_CONFIG = cached;
-    if (shouldRefreshCachedAiConfig()) {
-        _aiConfigPromise = requestRemoteAiConfig().catch(() => CUSTOM_AI_CONFIG).then((cfg) => {
-            CUSTOM_AI_CONFIG = cfg || CUSTOM_AI_CONFIG;
-            try { updateAiStatusBadge(); } catch {}
-            return CUSTOM_AI_CONFIG;
-        });
-    }
-    return cached;
-}
-
-_aiConfigPromise = requestRemoteAiConfig();
-return _aiConfigPromise;
-}
-
-function isProxyAiMode() {
-return !!(CUSTOM_AI_CONFIG && CUSTOM_AI_CONFIG.provider === 'proxy' && (CUSTOM_AI_CONFIG.chatUrl || '').trim());
-}
-
-function getCustomAiApiUrl() {
-const local = getCurrentApi();
-if (local) {
-    const url = getApiChatUrl(local);
-    if (url) return url;
-}
-if (isProxyAiMode()) return (CUSTOM_AI_CONFIG.chatUrl || '').trim();
-const base = (CUSTOM_AI_CONFIG.apiBase || '').replace(/\/$/, '');
-const path = CUSTOM_AI_CONFIG.apiPath || '/chat/completions';
-return base + path;
-}
-
-function isCustomAiConfigured() {
-const apis = API_MANAGER.apis || [];
-if (apis.some(a => !isLunanProxyApi(a) && isApiEntryConfigured(a))) return true;
-if (apis.some(a => isLunanProxyApi(a) && a.enabled !== false)) return true;
-if (!CUSTOM_AI_CONFIG) return false;
-const model = (CUSTOM_AI_CONFIG.model || '').trim();
-if (!model) return false;
-if (isProxyAiMode()) return !!(CUSTOM_AI_CONFIG.chatUrl || '').trim();
-const base = (CUSTOM_AI_CONFIG.apiBase || '').trim();
-if (!base) return false;
-if (CUSTOM_AI_CONFIG.provider === 'ollama') return true;
-if (CUSTOM_AI_CONFIG.provider === 'openwebui') return !!(CUSTOM_AI_CONFIG.apiKey || '').trim();
-return !!(CUSTOM_AI_CONFIG.apiKey || '').trim() && CUSTOM_AI_CONFIG.apiKey !== 'sk-你的密钥';
+throw lastErr || new Error('所有 API 均调用失败');
 }
 
 function getActiveAiDisplayInfo() {
 const local = getCurrentApi();
-if (local) {
-    if (isLunanProxyApi(local)) {
-        return {
-            tag: local.name || '路南云代理',
-            model: getApiModel(local) || (isLunanRemoteReady() ? (CUSTOM_AI_CONFIG.model || '远程') : '待连接')
-        };
-    }
-    if (isApiEntryConfigured(local)) {
-        return {
-            tag: local.name || 'API',
-            model: getSelectedModelLabel(local) || getSelectedModel(local)
-        };
-    }
-}
-if (CUSTOM_AI_CONFIG) {
+if (local && isApiEntryConfigured(local)) {
     return {
-        tag: isProxyAiMode() ? '路南云代理' : (CUSTOM_AI_CONFIG.provider || 'AI'),
-        model: CUSTOM_AI_CONFIG.model || ''
+        tag: local.name || 'API',
+        model: getSelectedModelLabel(local) || getSelectedModel(local)
     };
 }
 return { tag: '未配置', model: '' };
 }
 
-function buildAiRequestHeaders() {
-const local = getCurrentApi();
-if (isLocalApiManagerConfigured() && local) return buildHeadersForApi(local);
-const headers = { 'Content-Type': 'application/json' };
-if (isProxyAiMode()) {
-    headers['X-CX-Helper-Auth'] = _getRemoteConfigAuth();
-    return headers;
-}
-const key = (CUSTOM_AI_CONFIG.apiKey || '').trim();
-if (key) headers['Authorization'] = 'Bearer ' + key;
-return headers;
-}
-
-function getActiveAiModel() {
-const local = getCurrentApi();
-if (local) return getApiModel(local);
-return (CUSTOM_AI_CONFIG && CUSTOM_AI_CONFIG.model) || '';
-}
-
-function deepseekChatLegacy(messages, options = {}) {
-const run = () => {
-    if (!isCustomAiConfigured()) {
-        return Promise.reject(new Error('AI 未配置：请上传 cx-helper-server-upload 到 h5.lunan.cloud/api/'));
-    }
-    return new Promise((resolve, reject) => {
-        try {
-            GM_xmlhttpRequest({
-                method: 'POST',
-                url: getCustomAiApiUrl(),
-                headers: buildAiRequestHeaders(),
-                data: JSON.stringify({ model: getActiveAiModel(), messages, stream: false, ...options }),
-                timeout: CUSTOM_AI_CONFIG.timeoutMs || 120000,
-                onload: (r) => {
-                    if (r.status >= 200 && r.status < 300) {
-                        try { resolve(JSON.parse(r.responseText)); } catch (e) { reject(e); }
-                    } else {
-                        reject(new Error('HTTP ' + r.status + ': ' + String(r.responseText || '').slice(0, 200)));
-                    }
-                },
-                onerror: () => reject(new Error('无法连接 AI 服务，请检查 h5.lunan.cloud 代理')),
-                ontimeout: () => reject(new Error('AI 响应超时'))
-            });
-        } catch (err) { reject(err); }
-    });
-};
-if (!CUSTOM_AI_CONFIG) return loadRemoteAiConfig().then(run);
-return run();
-}
-
 function deepseekChat(messages, options = {}) {
 return aiChatWithFailover(messages, options, null);
 }
-
-try { loadRemoteAiConfig().catch(() => {}); } catch {}
 let isAnswering = false;
 let questionCatalog = null;
 let questionSelection = new Set();
@@ -1643,12 +1320,10 @@ async function runPluginLoadSequence() {
         setPluginLoaderProgress(12, '插件启动中...');
         await sleep(50);
 
-        const hasCache = !!readCachedAiConfig();
-        setPluginLoaderProgress(35, hasCache ? '已读取本地缓存' : '正在加载 AI 配置...');
-        try { await loadRemoteAiConfig(); } catch {}
+        setPluginLoaderProgress(35, '正在加载 API 配置...');
         await sleep(60);
 
-        setPluginLoaderProgress(65, isCustomAiConfigured() ? 'AI 服务已连接' : '等待 AI 配置...');
+        setPluginLoaderProgress(65, isLocalApiManagerConfigured() ? 'AI 服务已就绪' : '等待 AI 配置...');
         setPluginLoaderProgress(85, '初始化操作面板...');
         mountPanelIfOwner();
         try { updateAiStatusBadge(); } catch {}
@@ -1933,9 +1608,6 @@ function renderApiSettingsTabs() {
     (API_MANAGER.apis || []).forEach(a => {
         html += '<button type="button" class="cx-api-tab' + (a.id === cxApiSettingsEditingId ? ' active' : '') + '" data-id="' + a.id + '">' + (a.name || 'API') + '</button>';
     });
-    if (!(API_MANAGER.apis || []).some(a => isLunanProxyApi(a))) {
-        html += '<button type="button" class="cx-api-tab cx-api-tab-add" data-add="lunan">+ 路南云代理</button>';
-    }
     html += '<button type="button" class="cx-api-tab cx-api-tab-add" data-add="deepseek">+ DeepSeek</button>';
     html += '<button type="button" class="cx-api-tab cx-api-tab-add" data-add="ollama">+ Ollama</button>';
     html += '<button type="button" class="cx-api-tab cx-api-tab-add" data-add="openai">+ OpenAI</button>';
@@ -1955,114 +1627,12 @@ function renderApiSettingsTabs() {
     });
 }
 
-function getLunanStatusHtml() {
-    if (!hasProxyAuthKey()) {
-        return '<div class="cx-api-status cx-api-status-warn">' +
-            '<div class="cx-api-status-title"><span class="cx-status-dot"></span>未配置授权码</div>' +
-            '<div class="cx-set-note">在下方填入路南云授权码后即可加载远程 AI 配置。</div>' +
-            '</div>';
-    }
-    if (isLunanRemoteReady()) {
-        const url = getApiChatUrl(getApiById(cxApiSettingsEditingId) || createLunanProxyEntry());
-        const model = (CUSTOM_AI_CONFIG && CUSTOM_AI_CONFIG.model) || '—';
-        return '<div class="cx-api-status cx-api-status-ok">' +
-            '<div class="cx-api-status-title"><span class="cx-status-dot"></span>远程配置已就绪</div>' +
-            '<div class="cx-status-kv">' +
-                '<div class="cx-status-kv-row"><span class="cx-status-kv-key">接口</span><code class="cx-status-kv-val">' + url + '</code></div>' +
-                '<div class="cx-status-kv-row"><span class="cx-status-kv-key">模型</span><span class="cx-status-kv-val">' + model + '</span></div>' +
-            '</div></div>';
-    }
-    return '<div class="cx-api-status cx-api-status-warn">' +
-        '<div class="cx-api-status-title"><span class="cx-status-dot"></span>远程配置未加载</div>' +
-        '<div class="cx-set-note">点击「刷新远程配置」重试。</div>' +
-        '</div>';
-}
-
 function renderApiSettingsBody(opts) {
     const body = document.getElementById('cx-api-settings-body');
     if (!body) return;
     const api = getApiById(cxApiSettingsEditingId);
     if (!api) {
         body.innerHTML = '<div class="cx-api-empty">请选择或添加 API</div>';
-        return;
-    }
-
-    if (isLunanProxyApi(api)) {
-        body.innerHTML =
-            '<div class="cx-set-field">' +
-                '<label class="cx-set-label" for="cx-api-name">配置名称</label>' +
-                '<input type="text" id="cx-api-name" value="' + (api.name || '').replace(/"/g, '&quot;') + '">' +
-            '</div>' +
-            '<div class="cx-set-field">' +
-                '<div class="cx-set-label-row">' +
-                    '<label class="cx-set-label" for="cx-lunan-auth">授权码</label>' +
-                    '<span class="cx-set-inline-note">' + (hasProxyAuthKey() ? '已配置' : '未配置') + '</span>' +
-                '</div>' +
-                '<input type="password" id="cx-lunan-auth" value="' + getProxyAuthKey().replace(/"/g, '&quot;') + '" placeholder="粘贴路南云授权码">' +
-                '<div class="cx-set-note">也可以在任意学习通页面附加 <b>?cxauth=授权码</b> 一次性写入。</div>' +
-            '</div>' +
-            '<div class="cx-set-note">路南云托管的 AI 代理，<b>无需填写 API Key</b>。可与 OpenAI / DeepSeek / Ollama 等自有 API 同时配置。</div>' +
-            '<div id="cx-lunan-status" style="margin-top:10px">' + getLunanStatusHtml() + '</div>' +
-            '<div class="cx-set-actions">' +
-                '<button type="button" id="cx-lunan-refresh" class="cx-api-btn">刷新远程配置</button>' +
-            '</div>' +
-            '<div class="cx-set-switch-list">' +
-                '<label class="cx-set-switch cx-set-switch-row">' +
-                    '<input type="checkbox" id="cx-api-failover-item"' + (api.failoverEnabled !== false ? ' checked' : '') + '>' +
-                    '<span class="cx-set-switch-track"><span class="cx-set-switch-thumb"></span></span>' +
-                    '<span class="cx-set-switch-title">参与容灾切换</span>' +
-                '</label>' +
-                '<label class="cx-set-switch cx-set-switch-row">' +
-                    '<input type="checkbox" id="cx-api-enabled-item"' + (api.enabled !== false ? ' checked' : '') + '>' +
-                    '<span class="cx-set-switch-track"><span class="cx-set-switch-thumb"></span></span>' +
-                    '<span class="cx-set-switch-title">启用此 API</span>' +
-                '</label>' +
-            '</div>' +
-            '<div class="cx-set-danger">' +
-                '<button type="button" id="cx-api-delete-current" class="cx-api-btn danger">删除当前配置</button>' +
-            '</div>';
-
-        body.querySelector('#cx-api-name').oninput = (e) => { api.name = e.target.value; saveApiManagerState(); renderApiSettingsTabs(); renderApiSettingsTop(); };
-        body.querySelector('#cx-lunan-auth').oninput = (e) => { setProxyAuthKey(e.target.value); };
-        body.querySelector('#cx-lunan-auth').onchange = (e) => {
-            setProxyAuthKey(e.target.value);
-            body.querySelector('#cx-lunan-status').innerHTML = getLunanStatusHtml();
-            const note = body.querySelector('.cx-set-inline-note');
-            if (note) note.textContent = hasProxyAuthKey() ? '已配置' : '未配置';
-            updateAiStatusBadge();
-        };
-        body.querySelector('#cx-api-failover-item').onchange = (e) => { api.failoverEnabled = !!e.target.checked; saveApiManagerState(); };
-        body.querySelector('#cx-api-enabled-item').onchange = (e) => { api.enabled = !!e.target.checked; saveApiManagerState(); updateAiStatusBadge(); };
-        body.querySelector('#cx-lunan-refresh').onclick = async () => {
-            const btn = body.querySelector('#cx-lunan-refresh');
-            btn.disabled = true;
-            btn.textContent = '刷新中...';
-            try {
-                await loadRemoteAiConfig(true);
-                syncApiModelsFromRemote(api);
-                body.querySelector('#cx-lunan-status').innerHTML = getLunanStatusHtml();
-                updateAiStatusBadge();
-                addLog('路南云远程配置已刷新', 'success');
-            } catch (e) {
-                addLog('刷新远程配置失败: ' + e.message, 'error');
-                body.querySelector('#cx-lunan-status').innerHTML = getLunanStatusHtml();
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '刷新远程配置';
-            }
-        };
-        body.querySelector('#cx-api-delete-current').onclick = () => {
-            if ((API_MANAGER.apis || []).length <= 1) {
-                addLog('至少保留一个 API 配置', 'warn');
-                return;
-            }
-            API_MANAGER.apis = API_MANAGER.apis.filter(a => a.id !== api.id);
-            if (API_MANAGER.defaultApiId === api.id) API_MANAGER.defaultApiId = API_MANAGER.apis[0].id;
-            if (API_MANAGER.currentApiId === api.id) API_MANAGER.currentApiId = API_MANAGER.apis[0].id;
-            cxApiSettingsEditingId = API_MANAGER.apis[0].id;
-            saveApiManagerState();
-            renderApiSettingsAll();
-        };
         return;
     }
 
@@ -2252,9 +1822,8 @@ function initApiSettingsPanel() {
 }
 
 async function ensureAccessAllowed() {
-    await loadRemoteAiConfig().catch(() => {});
-    if (!isCustomAiConfigured()) {
-        throw new Error('AI 未配置：请启用路南云代理或在设置中配置自有 API');
+    if (!isLocalApiManagerConfigured()) {
+        throw new Error('AI 未配置：请在「设置 → AI 接口」中填写接口地址与 API Key');
     }
     return true;
 }
@@ -6467,24 +6036,16 @@ async function updateAiStatusBadge() {
     try {
         const el = document.getElementById('cx_ai_status_badge');
         if (!el) return;
-        if (isCustomAiConfigured()) {
+        if (isLocalApiManagerConfigured()) {
             const info = getActiveAiDisplayInfo();
             el.textContent = info.tag + ' · ' + info.model;
             el.title = '点击打开 API 设置';
             return;
         }
-        try { await loadRemoteAiConfig(); } catch {}
-        if (!isCustomAiConfigured()) {
-            el.innerHTML = cxIconLabel('warning', '点击配置 API', { size: 11, className: 'cx-badge-icon' });
-            el.title = '点击打开 API 设置';
-            return;
-        }
-        const info = getActiveAiDisplayInfo();
-        el.textContent = info.tag + ' · ' + info.model;
+        el.innerHTML = cxIconLabel('warning', '点击配置 API', { size: 11, className: 'cx-badge-icon' });
         el.title = '点击打开 API 设置';
     } catch {}
 }
-
 
 function getQuestionInfo(questionElement) {
     try {
