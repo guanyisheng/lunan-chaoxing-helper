@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         路南云🏅学习通AI研习助手|刷课+答题+API专刷
 // @namespace    http://tampermonkey.net/
-// @version      2.4.0
+// @version      2.4.2
 // @description  mooc1 答题侧边栏（作业 dowork 页优先顶层挂载）；极简主题、多 API 配置、容灾切换、流式答题日志。支持菜单手动重载；作业页可选粘贴解除。
 // @author       Lunan
 // @match        *://*.chaoxing.com/*
@@ -1070,7 +1070,12 @@ function isCxPanelHost(hostname) {
 }
 
 function isChapterStudyFrameHostUrl(url) {
-    return /^https:\/\/(?:mooc1|mooc2-ans)\.chaoxing\.com\/mycourse\/studentstudy\?chapterId(?:=|%3D)/i.test(String(url || ''));
+    return /^https:\/\/(?:mooc1(?:-\d+)?|mooc1-api|mooc2-ans)\.chaoxing\.com\/(?:mooc-ans\/)?mycourse\/studentstudy\?(?:[^#]*&)?chapterId(?:=|%3D)/i.test(String(url || ''));
+}
+
+function isKnowledgeCardsPath(pathnameOrUrl) {
+    const s = String(pathnameOrUrl || '');
+    return /\/(?:mooc-ans\/)?knowledge\/cards(?:[/?#]|$)/i.test(s) || s.includes('/knowledge/cards');
 }
 
 function isChapterStudyPageContext() {
@@ -1378,8 +1383,10 @@ async function runQuestionLoadSequence() {
                 addLog('题目加载完成，共 ' + n + ' 题', 'success');
             } else {
                 setQuestionLoadStatus('暂未识别到题目，可点刷新重试');
+                try { broadcastBridge({ action: 'question-scan-request' }); } catch {}
             }
         } else {
+            try { broadcastBridge({ action: 'question-scan-request' }); } catch {}
             const panel = document.getElementById('answer-helper-panel');
             panel?.classList.remove('has-question-picker');
             syncCxSidebarPush();
@@ -4061,20 +4068,28 @@ function safeClick(el) {
 
 
 function forEachSameOriginFrame(callback) {
+    const seen = new Set();
     const visit = (win) => {
-        for (let i = 0; i < win.frames.length; i++) {
-            const f = win.frames[i];
-            try {
-                const doc = f.document || f.contentDocument;
-                if (doc && doc.location && doc.location.href.includes('.chaoxing.com')) {
-                    callback(doc);
-                    visit(f);
+        if (!win || seen.has(win)) return;
+        seen.add(win);
+        try {
+            const doc = win.document || win.contentDocument;
+            if (doc) {
+                let href = '';
+                try { href = doc.location && doc.location.href || ''; } catch {}
+                if (!href || href.includes('.chaoxing.com') || href.startsWith('about:')) {
+                    try { callback(doc); } catch {}
                 }
-            } catch {  }
-        }
+            }
+        } catch {}
+        try {
+            const len = win.frames ? win.frames.length : 0;
+            for (let i = 0; i < len; i++) {
+                try { visit(win.frames[i]); } catch {}
+            }
+        } catch {}
     };
-    try { callback(document); } catch {}
-    try { visit(window); } catch {}
+    try { visit(window.top); } catch { visit(window); }
 }
 
 
@@ -4096,6 +4111,184 @@ function forEachAllSameOriginDocs(callback) {
     };
     try { visit(window.top); } catch { visit(window); }
 }
+
+const CX_BRIDGE_TYPE = 'cx-lunan-bridge-v1';
+let studyBridgeDelegated = false;
+let studyBridgeWorker = false;
+let studyBridgeAckAt = 0;
+let studyBridgeAckLogged = false;
+
+function docLooksLikeStudyCards(doc) {
+    try {
+        if (!doc) return false;
+        if (doc.querySelector('.ans-attach-ct, .ans-job-ct, .chapter-item')) return true;
+        if (doc.querySelector('.wrap .ans-cc, #coursetest, .ans-cc')) return true;
+        if (typeof extractStudyPayloadFromPage === 'function' && extractStudyPayloadFromPage(doc)) return true;
+    } catch {}
+    return false;
+}
+
+function findCardsDoc() {
+    let cd = null;
+    let fallback = null;
+    forEachSameOriginFrame(function(doc) {
+        if (cd) return;
+        try {
+            const path = (doc.location && doc.location.pathname) || '';
+            const href = (doc.location && doc.location.href) || '';
+            if (isKnowledgeCardsPath(path) || isKnowledgeCardsPath(href)) {
+                cd = doc;
+                return;
+            }
+            if (!fallback && docLooksLikeStudyCards(doc)) fallback = doc;
+        } catch (e) {}
+    });
+    if (!cd) {
+        try {
+            if (isKnowledgeCardsPath(location.pathname) || isKnowledgeCardsPath(location.href)) cd = document;
+        } catch (e) {}
+    }
+    if (!cd && docLooksLikeStudyCards(document)) cd = document;
+    return cd || fallback;
+}
+
+function collectCardsIframeHints() {
+    const hints = [];
+    const seen = new Set();
+    const scan = (doc) => {
+        if (!doc || seen.has(doc)) return;
+        seen.add(doc);
+        try {
+            Array.from(doc.querySelectorAll('iframe')).forEach((ifr) => {
+                const src = ifr.getAttribute('src') || ifr.src || '';
+                if (!isKnowledgeCardsPath(src)) return;
+                let accessible = false;
+                try {
+                    const d = ifr.contentDocument || (ifr.contentWindow && ifr.contentWindow.document);
+                    if (d) accessible = true;
+                } catch (e) {}
+                hints.push({ src: src, accessible: accessible });
+            });
+        } catch (e) {}
+    };
+    forEachSameOriginFrame(scan);
+    try { scan(document); } catch (e) {}
+    return hints;
+}
+
+function postBridge(target, payload) {
+    try {
+        if (!target || typeof target.postMessage !== 'function') return;
+        target.postMessage(Object.assign({ __cx: CX_BRIDGE_TYPE, from: PANEL_INSTANCE_ID }, payload), '*');
+    } catch (e) {}
+}
+
+function broadcastBridge(payload) {
+    try { postBridge(window, payload); } catch (e) {}
+    try { if (window.parent && window.parent !== window) postBridge(window.parent, payload); } catch (e) {}
+    try { if (window.top && window.top !== window) postBridge(window.top, payload); } catch (e) {}
+    const visit = (win) => {
+        if (!win || !win.frames) return;
+        for (let i = 0; i < win.frames.length; i++) {
+            try { postBridge(win.frames[i], payload); } catch (e) {}
+            try { visit(win.frames[i]); } catch (e) {}
+        }
+    };
+    try { visit(window); } catch (e) {}
+    try { if (window.top) visit(window.top); } catch (e) {}
+}
+
+function clickNextChapterInThisFrame() {
+    try {
+        const chapterNext = document.querySelector('#prevNextFocusNext');
+        if (chapterNext) {
+            chapterNext.click();
+            return true;
+        }
+    } catch (e) {}
+    try {
+        const tip = document.querySelector('.maskDiv.jobFinishTip.maskFadeOut, .maskDiv.jobFinishTip');
+        if (tip) {
+            const tipNext = document.querySelector('.jb_btn.jb_btn_92.fr.fs14.nextChapter, .nextChapter');
+            if (tipNext) {
+                tipNext.click();
+                return true;
+            }
+        }
+    } catch (e) {}
+    return false;
+}
+
+function handleStudyBridgeMessage(event) {
+    const data = event && event.data;
+    if (!data || data.__cx !== CX_BRIDGE_TYPE || data.from === PANEL_INSTANCE_ID) return;
+    const action = data.action;
+
+    if (action === 'log') {
+        if (!document.getElementById('answer-log')) return;
+        appendLogLocal(data.message, data.logType || 'info');
+        return;
+    }
+
+    if (action === 'study-ack') {
+        studyBridgeAckAt = Date.now();
+        if (studyBridgeDelegated && !studyBridgeAckLogged && document.getElementById('answer-log')) {
+            studyBridgeAckLogged = true;
+            appendLogLocal('已桥接到学习内容框架，开始处理任务', 'success');
+        }
+        return;
+    }
+
+    if (action === 'click-next-chapter') {
+        if (clickNextChapterInThisFrame()) return;
+        return;
+    }
+
+    if (action === 'stop-study') {
+        if (studyBridgeWorker || isStudyingChapters) {
+            studyBridgeWorker = false;
+            stopStudyChapters();
+        }
+        return;
+    }
+
+    if (action === 'start-study') {
+        const selfIsCards =
+            isKnowledgeCardsPath(location.pathname) ||
+            isKnowledgeCardsPath(location.href) ||
+            docLooksLikeStudyCards(document);
+        if (!selfIsCards) return;
+        studyBridgeWorker = true;
+        broadcastBridge({ action: 'study-ack' });
+        if (!isStudyingChapters) {
+            startStudyChapters({ fromBridge: true });
+        }
+        return;
+    }
+
+    if (action === 'question-scan-request') {
+        const n = getQuestionContainers(document).length;
+        if (n <= 0 && !docLooksLikeStudyCards(document) && !isKnowledgeCardsPath(location.href)) return;
+        broadcastBridge({
+            action: 'question-scan-result',
+            count: n,
+            href: location.href,
+            hasStudyContent: docLooksLikeStudyCards(document) || !!findCardsDoc()
+        });
+        return;
+    }
+
+    if (action === 'question-scan-result') {
+        if (!document.getElementById('answer-helper-panel')) return;
+        if ((data.count || 0) > 0) {
+            appendLogLocal('子框架检测到 ' + data.count + ' 道题目（若本页列表为空，请在题目所在页刷新）', 'info');
+        }
+    }
+}
+
+try {
+    window.addEventListener('message', handleStudyBridgeMessage);
+} catch (e) {}
 
 
 const QUESTION_CONTAINER_SELECTOR = '.question, .questionLi, .subject_item, .examPaper_subject, .questionContainer, .q-item, .subject_node, .ti-item, .exam-item, .TiMu, .singleQuesId';
@@ -4522,24 +4715,41 @@ function skipChapter() {
     stopProgressMonitor();
     blankSectionChecks = 0;
     lastBlankSectionUrl = '';
-    var chapterNext = window.top.document.querySelector("#prevNextFocusNext");
-    if (chapterNext) {
-        chapterNext.click();
-    } else {
+
+    var clicked = false;
+    try {
+        var chapterNext = window.top.document.querySelector("#prevNextFocusNext");
+        if (chapterNext) {
+            chapterNext.click();
+            clicked = true;
+        }
+    } catch (e) {
+        broadcastBridge({ action: 'click-next-chapter' });
+        clicked = true;
+    }
+    if (!clicked) {
+        if (clickNextChapterInThisFrame()) {
+            clicked = true;
+        } else {
+            broadcastBridge({ action: 'click-next-chapter' });
+            clicked = true;
+        }
+    }
+    if (!clicked) {
         addLog("未找到 #prevNextFocusNext 元素", 'warning');
     }
 
     setTimeout(function() {
         try {
-            var tip = document.querySelector(".maskDiv.jobFinishTip.maskFadeOut");
+            var tip = document.querySelector(".maskDiv.jobFinishTip.maskFadeOut, .maskDiv.jobFinishTip");
             if (tip) {
-                var tipNextChapter = document.querySelector(".jb_btn.jb_btn_92.fr.fs14.nextChapter");
-                if (tipNextChapter) {
-                    tipNextChapter.click();
-                }
+                var tipNextChapter = document.querySelector(".jb_btn.jb_btn_92.fr.fs14.nextChapter, .nextChapter");
+                if (tipNextChapter) tipNextChapter.click();
+            } else {
+                broadcastBridge({ action: 'click-next-chapter' });
             }
-        } catch(e) {
-            addLog("未找到完成提示或下一章节按钮", 'warning');
+        } catch (e) {
+            broadcastBridge({ action: 'click-next-chapter' });
         }
         isSkippingChapter = false;
     }, 6000);
@@ -5294,33 +5504,26 @@ var initRetryCount = 0;
 var blankSectionChecks = 0;
 var lastBlankSectionUrl = '';
 
-function startStudyChapters() {
-    if (isStudyingChapters) { addLog('刷章节已在运行', 'info'); return; }
+function startStudyChapters(options) {
+    options = options || {};
+    const fromBridge = !!options.fromBridge;
+    if (isStudyingChapters) {
+        if (!fromBridge) addLog('刷章节已在运行', 'info');
+        return;
+    }
     isStudyingChapters = true;
+    studyBridgeDelegated = false;
+    studyBridgeAckLogged = false;
+    studyBridgeAckAt = 0;
+    if (!fromBridge) studyBridgeWorker = false;
     setPanelFixedHeight(360);
     updateStudyButtons(true);
-    addLog('正在初始化中', 'info');
+    addLog(fromBridge ? '子框架开始刷章节...' : '正在初始化中', 'info');
     initRetryCount = 0;
 
     setTimeout(function() {
         if (!isStudyingChapters) return;
-        addLog('开始刷章节...', 'success');
-
-    function findCardsDoc() {
-        var cd = null;
-        forEachSameOriginFrame(function(doc) {
-            if (cd) return;
-            try {
-                if (doc.location.pathname.includes('/knowledge/cards')) {
-                    cd = doc;
-                }
-            } catch(e) {}
-        });
-        if (!cd && location.pathname.includes('/knowledge/cards')) {
-            cd = document;
-        }
-        return cd;
-    }
+        if (!fromBridge) addLog('开始刷章节...', 'success');
 
     function checkAndInit(cardsDoc) {
         if (!cardsDoc) return false;
@@ -5383,13 +5586,27 @@ function startStudyChapters() {
         } catch(e) {}
     }
 
+    function tryDelegateToCardsFrame(reason) {
+        studyBridgeDelegated = true;
+        broadcastBridge({ action: 'start-study' });
+        if (reason) addLog(reason, 'info');
+    }
+
     var initialCardsDoc = findCardsDoc();
     if (initialCardsDoc) {
         addLog('正在检测任务', 'info');
         setupObserver(initialCardsDoc);
         checkAndInit(initialCardsDoc);
     } else {
-        addLog('正在定位学习页面...', 'info');
+        var hints = collectCardsIframeHints();
+        var hasCross = hints.some(function(h) { return !h.accessible; });
+        if (hasCross) {
+            tryDelegateToCardsFrame('检测到跨域学习内容框架，正在桥接启动...');
+        } else if (fromBridge) {
+            addLog('正在定位学习页面...', 'info');
+        } else {
+            tryDelegateToCardsFrame('正在定位学习页面，并尝试桥接子框架...');
+        }
     }
 
     if (studyIntervalId) clearInterval(studyIntervalId);
@@ -5409,16 +5626,38 @@ function startStudyChapters() {
         var cardsDoc = findCardsDoc();
         if (!cardsDoc) {
             initRetryCount++;
+            if (studyBridgeDelegated) {
+                if (Date.now() - studyBridgeAckAt > 8000) {
+                    broadcastBridge({ action: 'start-study' });
+                }
+                if (initRetryCount === 3) {
+                    addLog(studyBridgeAckAt ? '桥接已建立，等待子框架回报任务...' : '正在等待跨域学习页响应...', 'info');
+                }
+                if (initRetryCount % 10 === 0 && !studyBridgeAckAt) {
+                    addLog('仍未桥接到学习页，请确认已打开课程章节且脚本在全部框架生效', 'warning');
+                }
+                return;
+            }
+            if (!fromBridge && initRetryCount === 2) {
+                tryDelegateToCardsFrame('本页未找到任务卡片，尝试桥接子框架...');
+            }
             if (initRetryCount === 3) {
                 addLog('正在等待学习页面加载完成...', 'info');
             }
             if (initRetryCount % 10 === 0) {
-                addLog('仍在等待学习页面，请确认在课程章节页面中', 'warning');
+                var hintCount = collectCardsIframeHints().length;
+                if (hintCount > 0) {
+                    addLog('检测到 knowledge/cards 框架但无法直接读取，正在重试桥接', 'warning');
+                    tryDelegateToCardsFrame('');
+                } else {
+                    addLog('仍在等待学习页面，请确认在课程章节页面中', 'warning');
+                }
             }
             return;
         }
 
         initRetryCount = 0;
+        studyBridgeDelegated = false;
         setupObserver(cardsDoc);
         checkAndInit(cardsDoc);
     }, 3000);
@@ -5427,10 +5666,18 @@ function startStudyChapters() {
 
 function stopStudyChapters() {
     if (!isStudyingChapters) return;
+    const wasDelegator = studyBridgeDelegated && !studyBridgeWorker;
     isStudyingChapters = false;
     isMainInstance = false;
     processingBatch = false;
     isSkippingChapter = false;
+    if (wasDelegator) {
+        broadcastBridge({ action: 'stop-study' });
+    }
+    studyBridgeDelegated = false;
+    studyBridgeWorker = false;
+    studyBridgeAckAt = 0;
+    studyBridgeAckLogged = false;
     if (pendingSkipTimeoutId) { clearTimeout(pendingSkipTimeoutId); pendingSkipTimeoutId = null; }
     autoSkipDone = false;
     arrayEchelon = [];
@@ -5977,11 +6224,10 @@ function initAnswerLogList() {
     updateAnswerLogGradients(logContainer);
 }
 
-function addLog(message, type = 'info') {
-    try { if (typeof unsafeWindow !== 'undefined') unsafeWindow.__cxPanelLog = addLog; } catch {}
+function appendLogLocal(message, type = 'info') {
     try {
         const logContainer = document.getElementById('answer-log');
-        if (!logContainer) return;
+        if (!logContainer) return false;
         initAnswerLogList();
 
         const text = String(message || '')
@@ -6028,6 +6274,19 @@ function addLog(message, type = 'info') {
 
         logContainer.scrollTop = logContainer.scrollHeight;
         updateAnswerLogGradients(logContainer);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function addLog(message, type = 'info') {
+    try { if (typeof unsafeWindow !== 'undefined') unsafeWindow.__cxPanelLog = addLog; } catch {}
+    try {
+        if (appendLogLocal(message, type)) return;
+        if (studyBridgeWorker || !document.getElementById('answer-helper-panel')) {
+            broadcastBridge({ action: 'log', message: message, logType: type });
+        }
     } catch {}
 }
 
