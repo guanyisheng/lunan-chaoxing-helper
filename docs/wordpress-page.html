@@ -1,386 +1,221 @@
 <!--
-  路南云 · 学习通 AI 研习助手 — 产品介绍页
-  用法：WordPress 编辑器 → 添加「自定义 HTML」区块（或切到「代码编辑器」视图）→ 整段粘贴。
-
-  说明：
-  1. 所有样式都锁在 #lncx 内，并对标题、段落、链接做了重置 + !important，
-     防止主题把 h1/h2 改成高亮块、把正文压成浅灰、给标题加装饰线。
-  2. 外层是一张带边框的白色卡片，主题若是图片背景也不会透上来。
-  3. 发布前把两处 URL 换成你的实际地址：安装脚本按钮、查看源码按钮。
+  路南云 · 学习通 AI 研习助手
+  WordPress：粘贴到「自定义 HTML」区块即可。
+  刻意不用 flex / grid / 卡片，避免主题把栏宽挤成竖排字。
 -->
 <div id="lncx">
+<style>
+#lncx {
+  display: block !important;
+  width: min(720px, 92vw) !important;
+  min-width: min(720px, 92vw) !important;
+  max-width: 720px !important;
+  margin: 0 auto !important;
+  padding: 8px 0 24px !important;
+  box-sizing: border-box !important;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif !important;
+  font-size: 15px !important;
+  line-height: 1.8 !important;
+  color: #222 !important;
+  text-align: left !important;
+  writing-mode: horizontal-tb !important;
+  direction: ltr !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+  white-space: normal !important;
+  flex: none !important;
+  grid-column: 1 / -1 !important;
+}
+#lncx * {
+  box-sizing: border-box !important;
+  writing-mode: horizontal-tb !important;
+  direction: ltr !important;
+  word-break: normal !important;
+  white-space: normal !important;
+  float: none !important;
+  position: static !important;
+}
+#lncx h1, #lncx h2, #lncx h3 {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 1.4em 0 0.5em !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: #111 !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+}
+#lncx h1 { font-size: 24px !important; margin-top: 0 !important; }
+#lncx h2 { font-size: 18px !important; }
+#lncx h3 { font-size: 15px !important; margin: 1em 0 0.3em !important; }
+#lncx h1::before, #lncx h1::after,
+#lncx h2::before, #lncx h2::after,
+#lncx h3::before, #lncx h3::after { content: none !important; display: none !important; }
+#lncx p {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 0 0.9em !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  color: #444 !important;
+  font-size: 15px !important;
+  line-height: 1.8 !important;
+  opacity: 1 !important;
+  text-indent: 0 !important;
+}
+#lncx a {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#lncx ul, #lncx ol {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 0 1em !important;
+  padding: 0 0 0 1.5em !important;
+  list-style-position: outside !important;
+  background: none !important;
+}
+#lncx ul { list-style-type: disc !important; }
+#lncx ol { list-style-type: decimal !important; }
+#lncx li {
+  display: list-item !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 0 0.55em !important;
+  padding: 0 !important;
+  color: #444 !important;
+  font-size: 15px !important;
+  line-height: 1.8 !important;
+}
+#lncx strong, #lncx b { color: #111 !important; font-weight: 700 !important; }
+#lncx code {
+  font-family: Menlo, Consolas, monospace !important;
+  font-size: 13px !important;
+  color: #333 !important;
+  background: #f3f4f6 !important;
+  padding: 1px 4px !important;
+  border-radius: 3px !important;
+}
+#lncx hr {
+  display: block !important;
+  border: 0 !important;
+  border-top: 1px solid #e5e7eb !important;
+  margin: 1.6em 0 !important;
+  height: 0 !important;
+  background: none !important;
+}
+#lncx .lk-btn {
+  display: inline-block !important;
+  margin: 0 8px 8px 0 !important;
+  padding: 8px 16px !important;
+  border: 1px solid #111 !important;
+  border-radius: 4px !important;
+  background: #111 !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  text-decoration: none !important;
+}
+#lncx .lk-btn2 {
+  display: inline-block !important;
+  margin: 0 8px 8px 0 !important;
+  padding: 8px 16px !important;
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  color: #333 !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  text-decoration: none !important;
+}
+#lncx .lk-small { color: #888 !important; font-size: 13px !important; }
+#lncx .lk-note {
+  display: block !important;
+  margin: 1em 0 !important;
+  padding: 12px 14px !important;
+  border: 1px solid #e5e7eb !important;
+  background: #f9fafb !important;
+  color: #444 !important;
+}
+#lncx .lk-note p { margin: 0 !important; color: #444 !important; }
+</style>
 
-  <style>
-  /* ---------- 根容器 ---------- */
-  #lncx {
-    --lk-ink: #111114;
-    --lk-ink2: #55555f;
-    --lk-ink3: #8c8c97;
-    --lk-line: #e7e7eb;
-    --lk-line2: #f1f1f4;
-    --lk-bg: #ffffff;
-    --lk-panel: #fafafb;
-    --lk-accent: #3b5bdb;
-    --lk-ok: #158a56;
+<p class="lk-small">用户脚本 · v2.4.0</p>
 
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 40px 44px 34px;
-    background: var(--lk-bg) !important;
-    border: 1px solid var(--lk-line);
-    border-radius: 16px;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
-                 "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, Arial, sans-serif;
-    font-size: 15px;
-    line-height: 1.75;
-    color: var(--lk-ink) !important;
-    text-align: left;
-    -webkit-font-smoothing: antialiased;
-    overflow-wrap: break-word;
-  }
+<h1>路南云 · 学习通 AI 研习助手</h1>
 
-  @media (prefers-color-scheme: dark) {
-    #lncx {
-      --lk-ink: #ececf1;
-      --lk-ink2: #a1a1ac;
-      --lk-ink3: #6e6e7a;
-      --lk-line: #2b2b32;
-      --lk-line2: #212128;
-      --lk-bg: #141417;
-      --lk-panel: #1b1b20;
-      --lk-accent: #8b9dff;
-      --lk-ok: #4ec98a;
-    }
-  }
+<p>一个装进用户脚本管理器、在侧边栏里工作的学习通（超星）辅助工具。它把刷课、答题、接口管理收进一块面板：自动识别当前页面的题目、调用你自己的 AI 生成答案并填入，章节测验按顺序推进。</p>
 
-  #lncx, #lncx *, #lncx *::before, #lncx *::after { box-sizing: border-box; }
+<p>
+  <a class="lk-btn" href="https://raw.githubusercontent.com/guanyisheng/lunan-chaoxing-helper/main/%E8%B7%AF%E5%8D%97%E4%BA%91%F0%9F%8F%85%E5%AD%A6%E4%B9%A0%E9%80%9AAI%E7%A0%94%E4%B9%A0%E5%8A%A9%E6%89%8B%7C%E5%88%B7%E8%AF%BE%2B%E7%AD%94%E9%A2%98%2BAPI%E4%B8%93%E5%88%B7.js">安装脚本</a>
+  <a class="lk-btn2" href="https://github.com/guanyisheng/lunan-chaoxing-helper" target="_blank" rel="noopener">查看源码</a>
+</p>
 
-  /* ---------- 标题 / 段落 重置（对抗主题覆盖） ---------- */
-  #lncx h1, #lncx h2, #lncx h3, #lncx h4 {
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: none !important;
-    background-image: none !important;
-    box-shadow: none !important;
-    color: inherit !important;
-    -webkit-text-fill-color: currentColor !important;
-    font-family: inherit !important;
-    font-weight: 600 !important;
-    letter-spacing: normal !important;
-    text-transform: none !important;
-    text-shadow: none !important;
-    line-height: 1.4 !important;
-    float: none !important;
-    width: auto !important;
-    max-width: none !important;
-    position: static !important;
-    opacity: 1 !important;
-    filter: none !important;
-  }
-  #lncx h1::before, #lncx h1::after,
-  #lncx h2::before, #lncx h2::after,
-  #lncx h3::before, #lncx h3::after,
-  #lncx h4::before, #lncx h4::after {
-    content: none !important;
-    display: none !important;
-  }
-  #lncx p {
-    margin: 0 0 12px !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: none !important;
-    color: var(--lk-ink2) !important;
-    -webkit-text-fill-color: currentColor !important;
-    font-family: inherit !important;
-    font-size: 14.5px !important;
-    line-height: 1.8 !important;
-    opacity: 1 !important;
-    filter: none !important;
-    text-indent: 0 !important;
-  }
-  #lncx p:last-child { margin-bottom: 0 !important; }
-  #lncx a {
-    color: var(--lk-accent) !important;
-    text-decoration: none !important;
-    background: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-  #lncx a:hover { text-decoration: underline !important; }
-  #lncx ul, #lncx ol {
-    margin: 0 0 12px !important;
-    padding: 0 0 0 22px !important;
-    background: none !important;
-    list-style-position: outside !important;
-  }
-  #lncx ul { list-style: disc outside !important; }
-  #lncx ol { list-style: decimal outside !important; }
-  #lncx li {
-    margin: 0 0 9px !important;
-    padding: 0 !important;
-    color: var(--lk-ink2) !important;
-    font-size: 14.5px !important;
-    line-height: 1.8 !important;
-  }
-  #lncx li::marker { color: var(--lk-ink3); }
-  #lncx li:last-child { margin-bottom: 0 !important; }
-  #lncx strong, #lncx b { color: var(--lk-ink) !important; font-weight: 600 !important; }
-  #lncx code {
-    padding: 1px 5px;
-    border: 1px solid var(--lk-line);
-    border-radius: 4px;
-    background: var(--lk-panel) !important;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 12.5px;
-    color: var(--lk-ink2) !important;
-  }
-  #lncx hr { display: none !important; }
-  #lncx img { max-width: 100% !important; height: auto !important; }
+<p class="lk-small">脚本猫 / Tampermonkey / Violentmonkey · 单文件无依赖 · Chrome · Edge · Firefox</p>
 
-  /* ---------- 头部 ---------- */
-  #lncx .lk-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    margin-bottom: 14px;
-    padding: 4px 10px 4px 8px;
-    border: 1px solid var(--lk-line);
-    border-radius: 999px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: var(--lk-ink2) !important;
-  }
-  #lncx .lk-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--lk-ok);
-  }
-  #lncx h1.lk-title {
-    font-size: 26px !important;
-    letter-spacing: -.01em !important;
-    margin-bottom: 12px !important;
-  }
-  #lncx .lk-lede { font-size: 15px !important; color: var(--lk-ink2) !important; }
+<hr>
 
-  /* ---------- 按钮 ---------- */
-  #lncx .lk-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 20px 0 14px;
-  }
-  #lncx .lk-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 9px 20px;
-    border-radius: 7px;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.5;
-    text-decoration: none !important;
-    transition: opacity 140ms ease, background 140ms ease;
-  }
-  #lncx .lk-btn-primary {
-    background: var(--lk-ink) !important;
-    border: 1px solid var(--lk-ink) !important;
-    color: var(--lk-bg) !important;
-  }
-  #lncx .lk-btn-primary:hover { opacity: .85; text-decoration: none !important; }
-  #lncx .lk-btn-ghost {
-    background: transparent !important;
-    border: 1px solid var(--lk-line) !important;
-    color: var(--lk-ink2) !important;
-  }
-  #lncx .lk-btn-ghost:hover {
-    background: var(--lk-panel) !important;
-    color: var(--lk-ink) !important;
-    text-decoration: none !important;
-  }
-  #lncx .lk-meta {
-    font-size: 12.5px !important;
-    color: var(--lk-ink3) !important;
-    margin: 0 !important;
-  }
+<h2>功能</h2>
 
-  /* ---------- 分节 ---------- */
-  #lncx .lk-sec { margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--lk-line2); }
-  #lncx .lk-sec h2 { font-size: 17px !important; margin-bottom: 14px !important; }
-  #lncx .lk-kicker {
-    margin: 0 0 6px !important;
-    font-size: 11.5px !important;
-    font-weight: 600 !important;
-    letter-spacing: .1em !important;
-    text-transform: uppercase !important;
-    color: var(--lk-ink3) !important;
-  }
+<ul>
+  <li><strong>一键答题</strong>：识别当前页面的题目，按题型生成答案并自动填入，支持单选、多选、判断与填空。</li>
+  <li><strong>刷章节测验</strong>：按章节顺序自动推进，完成一节测验后跳到下一节，随时可以暂停。</li>
+  <li><strong>API 专刷</strong>：独立页面批量处理视频与文档，提供正常模式和补时长模式。</li>
+  <li><strong>多接口管理</strong>：DeepSeek、OpenAI、Ollama 或任意 OpenAI 兼容接口可以同时存在。</li>
+  <li><strong>容灾切换</strong>：当前接口报错时，自动切换到其他已启用的接口，答题不中断。</li>
+  <li><strong>选题与正确率</strong>：可只答一部分题；正确率可调，按概率故意答错。</li>
+</ul>
 
-  /* ---------- 特性列表 ---------- */
-  #lncx .lk-list { list-style: none !important; padding: 0 !important; margin: 0 !important; }
-  #lncx .lk-list li {
-    padding: 11px 0 !important;
-    margin: 0 !important;
-    border-top: 1px solid var(--lk-line2);
-    font-size: 14.5px !important;
-    line-height: 1.75 !important;
-  }
-  #lncx .lk-list li:first-child { border-top: 0; padding-top: 0 !important; }
-  #lncx .lk-list li:last-child { padding-bottom: 0 !important; }
-  #lncx .lk-list b { margin-right: 8px; }
+<hr>
 
-  /* ---------- 提示块 ---------- */
-  #lncx .lk-note {
-    margin-top: 16px;
-    padding: 14px 16px;
-    background: var(--lk-panel) !important;
-    border: 1px solid var(--lk-line);
-    border-left: 3px solid var(--lk-accent);
-    border-radius: 6px;
-  }
-  #lncx .lk-note p { font-size: 13.5px !important; margin: 0 !important; }
+<h2>安装</h2>
 
-  /* ---------- FAQ ---------- */
-  #lncx .lk-faq { margin-top: 4px; }
-  #lncx .lk-faq details { border-top: 1px solid var(--lk-line2); }
-  #lncx .lk-faq details:first-child { border-top: 0; }
-  #lncx .lk-faq summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 0;
-    font-size: 14.5px;
-    font-weight: 500;
-    color: var(--lk-ink) !important;
-    cursor: pointer;
-    list-style: none;
-  }
-  #lncx .lk-faq summary::-webkit-details-marker { display: none; }
-  #lncx .lk-faq summary::after {
-    content: '+';
-    flex: none;
-    font-family: ui-monospace, Menlo, monospace;
-    font-size: 15px;
-    line-height: 1;
-    color: var(--lk-ink3);
-  }
-  #lncx .lk-faq details[open] summary::after { content: '\2212'; }
-  #lncx .lk-faq details p {
-    margin: -2px 0 14px !important;
-    padding-right: 22px;
-    font-size: 13.5px !important;
-  }
+<ol>
+  <li>安装用户脚本管理器。推荐<strong>脚本猫</strong>（ScriptCat），也可以用 Tampermonkey 或 Violentmonkey。</li>
+  <li>点上面的「安装脚本」，管理器会弹出安装界面，确认即可。</li>
+  <li>打开任意学习通页面，右侧会出现竖排「研习」按钮，点击展开面板。</li>
+  <li>进面板的「设置 → AI 接口」，新增一个配置，填写接口地址与 API Key，选择模型后就能答题。</li>
+</ol>
 
-  /* ---------- 页脚 ---------- */
-  #lncx .lk-foot {
-    margin-top: 26px;
-    padding-top: 18px;
-    border-top: 1px solid var(--lk-line2);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: 12.5px;
-    color: var(--lk-ink3);
-  }
+<div class="lk-note">
+  <p><strong>脚本不自带 AI 服务。</strong>所有回答都由你自己填入的接口生成，脚本本身不含任何密钥。地址要写到完整的 <code>/chat/completions</code>。多个接口可同时存在，打开「容灾切换」后失败会自动换下一个。</p>
+</div>
 
-  @media (max-width: 640px) {
-    #lncx { padding: 26px 20px 24px; border-radius: 12px; }
-    #lncx h1.lk-title { font-size: 22px !important; }
-    #lncx .lk-actions .lk-btn { flex: 1 1 auto; }
-  }
-  </style>
+<hr>
 
-  <!-- ================= 头部 ================= -->
-  <span class="lk-eyebrow"><span class="lk-dot"></span>用户脚本 · v2.4.0</span>
+<h2>常见问题</h2>
 
-  <h1 class="lk-title">路南云 · 学习通 AI 研习助手</h1>
+<h3>面板不出现怎么办？</h3>
+<p>先在脚本管理器里确认脚本已启用，且当前地址匹配 <code>*://*.chaoxing.com/*</code>。如果更新后仍无反应，用菜单里的「重载插件」手动刷新一次。</p>
 
-  <p class="lk-lede">
-    一个装进用户脚本管理器、在侧边栏里工作的学习通（超星）辅助工具。它把刷课、答题、接口管理收进一块面板：
-    自动识别当前页面的题目、调用你自己的 AI 生成答案并填入，章节测验按顺序推进。
-  </p>
+<h3>答题提示「AI 未配置」？</h3>
+<p>到「设置 → AI 接口」新增一个配置，填写完整的接口地址与 API Key，点「获取模型列表」选中模型。Ollama 本地服务不需要 Key。</p>
 
-  <div class="lk-actions">
-    <a class="lk-btn lk-btn-primary"
-       href="https://raw.githubusercontent.com/guanyisheng/lunan-chaoxing-helper/main/%E8%B7%AF%E5%8D%97%E4%BA%91%F0%9F%8F%85%E5%AD%A6%E4%B9%A0%E9%80%9AAI%E7%A0%94%E4%B9%A0%E5%8A%A9%E6%89%8B%7C%E5%88%B7%E8%AF%BE%2B%E7%AD%94%E9%A2%98%2BAPI%E4%B8%93%E5%88%B7.js">安装脚本</a>
-    <a class="lk-btn lk-btn-ghost" href="https://github.com/guanyisheng/lunan-chaoxing-helper" target="_blank" rel="noopener">查看源码</a>
-  </div>
+<h3>可以只答一部分题吗？</h3>
+<p>可以。题目识别完成后右侧会出现题目分组，取消勾选不想答的题目，再点「一键答题」。</p>
 
-  <p class="lk-meta">脚本猫 / Tampermonkey / Violentmonkey · 单文件无依赖 · Chrome · Edge · Firefox</p>
+<h3>为什么答题正确率可以调低？</h3>
+<p>低于 100% 时，客观题会按概率故意答错或跳过，用来模拟真实作答节奏。默认 100%。</p>
 
-  <!-- ================= 功能 ================= -->
-  <section class="lk-sec">
-    <p class="lk-kicker">功能</p>
-    <h2>一块面板做完所有事</h2>
+<h3>会不会影响我的账号？</h3>
+<p>脚本只在你本地浏览器里操作页面与调用 AI 接口，不接管登录状态。但刷课、倍速这类行为本身有被平台判定的风险，请自行评估并遵守课程与平台规则。</p>
 
-    <ul class="lk-list">
-      <li><b>一键答题</b>识别当前页面的题目，按题型生成答案并自动填入，支持单选、多选、判断与填空。</li>
-      <li><b>刷章节测验</b>按章节顺序自动推进，完成一节测验后跳到下一节，随时可以暂停。</li>
-      <li><b>API 专刷</b>独立页面批量处理视频与文档，提供正常模式和补时长模式。</li>
-      <li><b>多接口管理</b>DeepSeek、OpenAI、Ollama 或任意 OpenAI 兼容接口可以同时存在，分别设置默认与当前使用。</li>
-      <li><b>容灾切换</b>当前接口报错时，自动按顺序切换到其他已启用的接口，答题不中断。</li>
-      <li><b>选题与正确率</b>右栏列出识别到的题目，可以只答其中一部分；正确率可调，按概率故意答错。</li>
-    </ul>
-  </section>
+<hr>
 
-  <!-- ================= 安装 ================= -->
-  <section class="lk-sec">
-    <p class="lk-kicker">安装</p>
-    <h2>四步开始使用</h2>
-
-    <ol>
-      <li>安装用户脚本管理器。推荐 <strong>脚本猫</strong>（ScriptCat），也可以用 Tampermonkey 或 Violentmonkey。</li>
-      <li>点上面的「安装脚本」，管理器会弹出安装界面，确认即可。</li>
-      <li>打开任意学习通页面，右侧会出现竖排「研习」按钮，点击展开面板。拖动竖条可以调整位置。</li>
-      <li>进面板的「设置 → AI 接口」，新增一个配置，填写接口地址与 API Key，选择模型后就能答题。</li>
-    </ol>
-
-    <div class="lk-note">
-      <p>
-        <strong>脚本不自带 AI 服务。</strong>它只是一层界面，所有回答都由你自己填入的接口生成，脚本本身不含任何密钥。
-        支持 DeepSeek、OpenAI、Ollama 以及任何 OpenAI 兼容地址（第三方中转、自建网关都可以），
-        地址要写到完整的 <code>/chat/completions</code>。多个接口能同时存在，打开「容灾切换」后某个接口失败会自动换下一个。
-      </p>
-    </div>
-  </section>
-
-  <!-- ================= 常见问题 ================= -->
-  <section class="lk-sec">
-    <p class="lk-kicker">常见问题</p>
-    <h2>你可能想知道</h2>
-
-    <div class="lk-faq">
-      <details>
-        <summary>面板不出现怎么办？</summary>
-        <p>先在脚本管理器里确认脚本已启用，且当前地址匹配 <code>*://*.chaoxing.com/*</code>。如果脚本更新过仍无反应，用菜单里的「重载插件」手动刷新一次。</p>
-      </details>
-      <details>
-        <summary>答题提示「AI 未配置」？</summary>
-        <p>说明还没有可用的接口。到「设置 → AI 接口」新增一个配置，填写完整的接口地址与 API Key，点「获取模型列表」选中模型。Ollama 这类本地服务不需要 Key，地址填对即可。</p>
-      </details>
-      <details>
-        <summary>可以只答一部分题吗？</summary>
-        <p>可以。题目识别完成后右侧会出现题目分组，取消勾选不想答的题目，再点「一键答题」。</p>
-      </details>
-      <details>
-        <summary>为什么答题正确率可以调低？</summary>
-        <p>低于 100% 时，客观题会按概率故意答错或跳过，用来模拟真实作答节奏。默认 100%。</p>
-      </details>
-      <details>
-        <summary>会不会影响我的账号？</summary>
-        <p>脚本只在你本地浏览器里操作页面与调用 AI 接口，不接管登录状态。但刷课、倍速这类行为本身有被平台判定的风险，请自行评估并遵守课程与平台规则。</p>
-      </details>
-    </div>
-  </section>
-
-  <!-- ================= 页脚 ================= -->
-  <div class="lk-foot">
-    <span>© 路南云 · 仅供学习研究，请遵守课程与平台规则</span>
-    <a href="https://github.com/guanyisheng/lunan-chaoxing-helper" target="_blank" rel="noopener">GitHub 仓库</a>
-  </div>
+<p class="lk-small">© 路南云 · 仅供学习研究，请遵守课程与平台规则 · <a href="https://github.com/guanyisheng/lunan-chaoxing-helper" target="_blank" rel="noopener">GitHub</a></p>
 
 </div>
