@@ -1,8 +1,20 @@
 # 路南云 · 学习通 AI 研习助手
 
-> 学习通（超星）刷课 + 自动答题用户脚本 · 侧边栏形态 · 极简界面 · 支持自建 API 与容灾切换
+学习通（超星）刷课 + 自动答题用户脚本 · 侧边栏形态 · 极简界面 · 支持自建 API 与容灾切换
 
 一个运行在浏览器用户脚本管理器（脚本猫 / Tampermonkey / Violentmonkey）里的学习通辅助工具。以右侧滑出侧边栏的方式工作，不遮挡课件，支持章节刷课、作业与测验自动作答、多 AI 接口配置与失败自动切换。
+
+<p>
+  <img width="49%" src="docs/images/panel-light.png" alt="功能面板（浅色）">
+  <img width="49%" src="docs/images/panel-dark.png" alt="功能面板（深色）">
+</p>
+
+<p>
+  <img width="27.5%" src="docs/images/settings-light.png" alt="设置面板（浅色）">
+  <img width="27.5%" src="docs/images/settings-dark.png" alt="设置面板（深色）">
+</p>
+
+> 截图取自脚本自身样式，深浅色跟随系统。
 
 ## 功能
 
@@ -38,6 +50,7 @@ Ollama 本地地址 `http://localhost:11434/v1/chat/completions` 无需 Key。�
 ```
 路南云🏅学习通AI研习助手|刷课+答题+API专刷.js   用户脚本源码（单文件）
 docs/wordpress-page.html                        产品介绍页（可粘贴进 WordPress 代码编辑器）
+docs/images/                                    面板截图
 ```
 
 ## 说明
