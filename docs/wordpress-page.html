@@ -1,0 +1,510 @@
+<!--
+  路南云 · 学习通 AI 研习助手 — 产品介绍页
+  用法：WordPress 编辑器 → 添加「自定义 HTML」区块（或切到「代码编辑器」视图）→ 整段粘贴。
+  样式全部以 .lncx 为前缀作用域，不会污染主题样式；支持深色/浅色自动切换。
+  发布前请把下面两处 URL 换成你的实际地址：
+    1. 安装脚本按钮  → data-install
+    2. 查看源码按钮  → data-source
+-->
+<div class="lncx">
+
+  <style>
+  .lncx {
+    --lncx-bg: #ffffff;
+    --lncx-panel: #fafafa;
+    --lncx-line: rgba(0,0,0,.10);
+    --lncx-line-soft: rgba(0,0,0,.06);
+    --lncx-ink: #111113;
+    --lncx-ink-2: #5c5c66;
+    --lncx-ink-3: #94949e;
+    --lncx-accent: #3b5bdb;
+    --lncx-accent-soft: rgba(59,91,219,.09);
+    --lncx-ok: #17915a;
+
+    --lncx-r-sm: 6px;
+    --lncx-r: 10px;
+    --lncx-r-lg: 14px;
+    --lncx-t: 160ms cubic-bezier(.2,0,.2,1);
+
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 8px 0 40px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--lncx-ink);
+    -webkit-font-smoothing: antialiased;
+    text-align: left;
+    box-sizing: border-box;
+  }
+  .lncx *, .lncx *::before, .lncx *::after { box-sizing: border-box; }
+
+  @media (prefers-color-scheme: dark) {
+    .lncx {
+      --lncx-bg: #131316;
+      --lncx-panel: #1b1b1f;
+      --lncx-line: rgba(255,255,255,.10);
+      --lncx-line-soft: rgba(255,255,255,.06);
+      --lncx-ink: #ececf1;
+      --lncx-ink-2: #a2a2ad;
+      --lncx-ink-3: #6f6f7a;
+      --lncx-accent: #7b93ff;
+      --lncx-accent-soft: rgba(123,147,255,.14);
+      --lncx-ok: #4ec98a;
+    }
+  }
+
+  /* ---------- 头部 ---------- */
+  .lncx-hero { padding: 8px 0 32px; }
+  .lncx-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 4px 10px 4px 8px;
+    border: 1px solid var(--lncx-line);
+    border-radius: 999px;
+    font-size: 12px;
+    line-height: 1.5;
+    letter-spacing: .02em;
+    color: var(--lncx-ink-2);
+  }
+  .lncx-eyebrow .lncx-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--lncx-ok);
+  }
+  .lncx h1.lncx-title {
+    margin: 0 0 14px;
+    font-size: 34px;
+    line-height: 1.28;
+    font-weight: 650;
+    letter-spacing: -.01em;
+    color: var(--lncx-ink);
+  }
+  .lncx .lncx-lede {
+    margin: 0 0 26px;
+    max-width: 60ch;
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--lncx-ink-2);
+  }
+  .lncx .lncx-lede b { color: var(--lncx-ink); font-weight: 550; }
+
+  .lncx-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .lncx-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: 1px solid transparent;
+    border-radius: var(--lncx-r-sm);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-decoration: none !important;
+    cursor: pointer;
+    transition: background var(--lncx-t), border-color var(--lncx-t), color var(--lncx-t);
+  }
+  .lncx-btn-primary {
+    background: var(--lncx-ink);
+    border-color: var(--lncx-ink);
+    color: var(--lncx-bg) !important;
+  }
+  .lncx-btn-primary:hover { opacity: .84; color: var(--lncx-bg) !important; }
+  .lncx-btn-ghost {
+    background: transparent;
+    border-color: var(--lncx-line);
+    color: var(--lncx-ink-2) !important;
+  }
+  .lncx-btn-ghost:hover {
+    background: var(--lncx-panel);
+    border-color: var(--lncx-line);
+    color: var(--lncx-ink) !important;
+  }
+  .lncx-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 12px;
+    color: var(--lncx-ink-3);
+  }
+  .lncx-meta span { display: inline-flex; align-items: center; gap: 6px; }
+  .lncx-meta span::before {
+    content: '';
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--lncx-line);
+    border: 0;
+  }
+
+  /* ---------- 通用区块 ---------- */
+  .lncx-section { padding: 32px 0 0; }
+  .lncx-section + .lncx-section { margin-top: 32px; border-top: 1px solid var(--lncx-line-soft); }
+  .lncx-label {
+    margin: 0 0 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--lncx-ink-3);
+  }
+  .lncx h2.lncx-h2 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    line-height: 1.4;
+    font-weight: 600;
+    color: var(--lncx-ink);
+  }
+  .lncx .lncx-sub {
+    margin: 0 0 22px;
+    font-size: 14px;
+    color: var(--lncx-ink-2);
+  }
+
+  /* ---------- 特性网格 ---------- */
+  .lncx-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--lncx-line-soft);
+    border: 1px solid var(--lncx-line-soft);
+    border-radius: var(--lncx-r);
+    overflow: hidden;
+  }
+  .lncx-cell {
+    padding: 18px 18px 20px;
+    background: var(--lncx-bg);
+    transition: background var(--lncx-t);
+  }
+  .lncx-cell:hover { background: var(--lncx-panel); }
+  .lncx-cell h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--lncx-ink);
+  }
+  .lncx-cell p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--lncx-ink-3);
+  }
+  .lncx-cell .lncx-idx {
+    display: block;
+    margin-bottom: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--lncx-accent);
+  }
+
+  /* ---------- 步骤 ---------- */
+  .lncx-steps {
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--lncx-line-soft);
+    border-radius: var(--lncx-r);
+    overflow: hidden;
+  }
+  .lncx-step {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 14px;
+    padding: 18px;
+    background: var(--lncx-bg);
+  }
+  .lncx-step + .lncx-step { border-top: 1px solid var(--lncx-line-soft); }
+  .lncx-step-n {
+    width: 24px; height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--lncx-line);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--lncx-ink-2);
+  }
+  .lncx-step h3 {
+    margin: 2px 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--lncx-ink);
+  }
+  .lncx-step p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--lncx-ink-3);
+  }
+  .lncx-step code, .lncx .lncx-code {
+    padding: 1px 5px;
+    background: var(--lncx-panel);
+    border: 1px solid var(--lncx-line-soft);
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: var(--lncx-ink-2);
+  }
+
+  /* ---------- 提示条 ---------- */
+  .lncx-note {
+    display: grid;
+    grid-template-columns: 3px 1fr;
+    gap: 14px;
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: var(--lncx-panel);
+    border: 1px solid var(--lncx-line-soft);
+    border-radius: var(--lncx-r);
+  }
+  .lncx-note::before {
+    content: '';
+    width: 3px;
+    border-radius: 2px;
+    background: var(--lncx-accent);
+  }
+  .lncx-note p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--lncx-ink-2);
+  }
+  .lncx-note b { color: var(--lncx-ink); font-weight: 600; }
+
+  /* ---------- FAQ ---------- */
+  .lncx-faq { border-top: 1px solid var(--lncx-line-soft); }
+  .lncx-faq details { border-bottom: 1px solid var(--lncx-line-soft); }
+  .lncx-faq summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 2px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--lncx-ink);
+    cursor: pointer;
+    list-style: none;
+  }
+  .lncx-faq summary::-webkit-details-marker { display: none; }
+  .lncx-faq summary::after {
+    content: '+';
+    flex: none;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 15px;
+    line-height: 1;
+    color: var(--lncx-ink-3);
+    transition: transform var(--lncx-t);
+  }
+  .lncx-faq details[open] summary::after { content: '−'; }
+  .lncx-faq details p {
+    margin: -4px 0 16px;
+    padding-right: 24px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--lncx-ink-3);
+  }
+  .lncx-faq details p code {
+    padding: 1px 5px;
+    background: var(--lncx-panel);
+    border: 1px solid var(--lncx-line-soft);
+    border-radius: 4px;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px;
+  }
+
+  /* ---------- 页脚 ---------- */
+  .lncx-foot {
+    margin-top: 32px;
+    padding-top: 18px;
+    border-top: 1px solid var(--lncx-line-soft);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--lncx-ink-3);
+  }
+  .lncx-foot a {
+    color: var(--lncx-ink-2) !important;
+    text-decoration: none !important;
+    border-bottom: 1px solid var(--lncx-line);
+    transition: color var(--lncx-t), border-color var(--lncx-t);
+  }
+  .lncx-foot a:hover { color: var(--lncx-ink) !important; border-color: var(--lncx-ink); }
+
+  @media (max-width: 600px) {
+    .lncx h1.lncx-title { font-size: 26px; }
+    .lncx-actions .lncx-btn { flex: 1; }
+    .lncx-step { grid-template-columns: 26px 1fr; gap: 10px; padding: 16px 14px; }
+  }
+  </style>
+
+  <!-- ================= 头部 ================= -->
+  <header class="lncx-hero">
+    <div class="lncx-eyebrow"><span class="lncx-dot"></span>用户脚本 · v2.3.0</div>
+
+    <h1 class="lncx-title">路南云 · 学习通 AI 研习助手</h1>
+
+    <p class="lncx-lede">
+      侧边栏形态的学习通辅助工具，把<b>刷课</b>、<b>答题</b>、<b>接口管理</b>收进一块面板。
+      自动识别当前页面题目、调用 AI 生成答案并填入，章节测验按顺序推进；
+      支持自建 API 与失败自动切换，界面跟随系统深浅色。
+    </p>
+
+    <div class="lncx-actions">
+      <a class="lncx-btn lncx-btn-primary"
+         href="https://github.com/guanyisheng/lunan-chaoxing-helper/raw/main/%E8%B7%AF%E5%8D%97%E4%BA%91%F0%9F%8F%85%E5%AD%A6%E4%B9%A0%E9%80%9AAI%E7%A0%94%E4%B9%A0%E5%8A%A9%E6%89%8B%7C%E5%88%B7%E8%AF%BE%2B%E7%AD%94%E9%A2%98%2BAPI%E4%B8%93%E5%88%B7.js"
+         data-install>安装脚本</a>
+      <a class="lncx-btn lncx-btn-ghost"
+         href="https://github.com/guanyisheng/lunan-chaoxing-helper"
+         target="_blank" rel="noopener"
+         data-source>查看源码</a>
+    </div>
+
+    <div class="lncx-meta">
+      <span>脚本猫 / Tampermonkey / Violentmonkey</span>
+      <span>单文件 · 无外部依赖</span>
+      <span>Chrome · Edge · Firefox</span>
+    </div>
+  </header>
+
+  <!-- ================= 功能 ================= -->
+  <section class="lncx-section">
+    <p class="lncx-label">功能</p>
+    <h2 class="lncx-h2">一块面板做完所有事</h2>
+    <p class="lncx-sub">右侧滑出，不遮挡课件；拖动竖条可上下调整位置。</p>
+
+    <div class="lncx-grid">
+      <div class="lncx-cell">
+        <span class="lncx-idx">01</span>
+        <h3>一键答题</h3>
+        <p>识别当前页题目，按题型生成答案并自动填入，支持单选、多选、判断与填空。</p>
+      </div>
+      <div class="lncx-cell">
+        <span class="lncx-idx">02</span>
+        <h3>刷章节测验</h3>
+        <p>按章节顺序自动推进，完成一节测验后跳到下一节，随时可暂停。</p>
+      </div>
+      <div class="lncx-cell">
+        <span class="lncx-idx">03</span>
+        <h3>API 专刷</h3>
+        <p>独立页面批量处理视频与文档，提供正常模式与补时长模式，可指定课程。</p>
+      </div>
+      <div class="lncx-cell">
+        <span class="lncx-idx">04</span>
+        <h3>多接口管理</h3>
+        <p>路南云代理、DeepSeek、OpenAI、Ollama 可同时存在，分别设置默认与当前使用。</p>
+      </div>
+      <div class="lncx-cell">
+        <span class="lncx-idx">05</span>
+        <h3>容灾切换</h3>
+        <p>当前接口报错时自动按顺序切换到其他已启用接口，答题不中断。</p>
+      </div>
+      <div class="lncx-cell">
+        <span class="lncx-idx">06</span>
+        <h3>选题与正确率</h3>
+        <p>右栏列出识别到的题目，可只答其中一部分；正确率可调，按概率故意答错。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 安装 ================= -->
+  <section class="lncx-section">
+    <p class="lncx-label">安装</p>
+    <h2 class="lncx-h2">三步开始使用</h2>
+
+    <div class="lncx-steps">
+      <div class="lncx-step">
+        <span class="lncx-step-n">1</span>
+        <div>
+          <h3>安装用户脚本管理器</h3>
+          <p>推荐 <b>脚本猫</b>（ScriptCat），也可使用 Tampermonkey 或 Violentmonkey。浏览器扩展商店搜索名称即可安装。</p>
+        </div>
+      </div>
+      <div class="lncx-step">
+        <span class="lncx-step-n">2</span>
+        <div>
+          <h3>点击「安装脚本」</h3>
+          <p>脚本管理器会弹出安装界面，确认后即完成。之后脚本会在学习通页面自动加载。</p>
+        </div>
+      </div>
+      <div class="lncx-step">
+        <span class="lncx-step-n">3</span>
+        <div>
+          <h3>打开学习通页面</h3>
+          <p>右侧出现竖排「研习」按钮，点击展开面板。首次使用需在 <b>设置 → AI 接口</b> 里填授权码或自己的 API。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="lncx-note">
+      <p>
+        <b>关于授权码。</b>路南云代理需要授权码才能加载远程 AI 配置，脚本本身不含任何密钥。
+        在面板「设置 → AI 接口 → 路南云代理 → 授权码」里粘贴即可；
+        也可以访问任意学习通页面时附加 <code>?cxauth=授权码</code>，脚本会自动写入并从地址栏清除。
+        不想用代理的话，直接在设置里填自己的 OpenAI 兼容接口地址与 Key。
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= 常见问题 ================= -->
+  <section class="lncx-section">
+    <p class="lncx-label">常见问题</p>
+    <h2 class="lncx-h2">你可能想知道</h2>
+
+    <div class="lncx-faq">
+      <details>
+        <summary>面板不出现怎么办？</summary>
+        <p>
+          先在脚本管理器里确认脚本已启用，且当前地址匹配 <code>*://*.chaoxing.com/*</code>。
+          如果脚本更新过仍无反应，用菜单里的「重载插件 / 打开面板」手动刷新一次。
+        </p>
+      </details>
+      <details>
+        <summary>答题提示「未配置授权码」？</summary>
+        <p>
+          说明路南云代理还没拿到授权码。到设置里粘贴授权码，或改用自有 API：
+          填写接口地址（需是完整的 chat/completions 地址）与 Key，点「获取模型列表」选择模型即可。
+        </p>
+      </details>
+      <details>
+        <summary>可以只答一部分题吗？</summary>
+        <p>
+          可以。题目识别完成后右侧会出现题目分组，取消勾选不想答的题目，再点「一键答题」。
+        </p>
+      </details>
+      <details>
+        <summary>为什么答题正确率可以调低？</summary>
+        <p>
+          低于 100% 时，客观题会按概率故意答错或跳过，用来模拟真实作答节奏。默认 100%。
+        </p>
+      </details>
+      <details>
+        <summary>会不会影响我的账号？</summary>
+        <p>
+          脚本只在你本地浏览器里操作页面与调用 AI 接口，不接管登录状态。
+          但刷课、倍速等行为本身有被平台判定的风险，请自行评估并遵守课程与平台规则。
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= 页脚 ================= -->
+  <footer class="lncx-foot">
+    <span>© 路南云 · 仅供学习研究，请遵守课程与平台规则</span>
+    <a href="https://github.com/guanyisheng/lunan-chaoxing-helper" target="_blank" rel="noopener">GitHub 仓库</a>
+  </footer>
+
+</div>

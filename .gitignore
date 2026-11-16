@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+._*
+.AppleDouble
+
+# 备份与临时文件
+*.bak
+*.bak.*
+*.tmp
+*.log
+_server.log
+
+# 编辑器
+.vscode/
+.idea/
