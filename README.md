@@ -23,6 +23,7 @@
 | 一键答题 | 识别当前页面题目，调用 AI 生成答案并自动填入，支持单选 / 多选 / 判断 / 填空 |
 | 刷章节测验 | 按章节顺序自动推进，完成测验后跳转下一节 |
 | API 专刷 | 独立页面批量刷视频与文档，支持正常模式与补时长模式 |
+| 抢答监控 | 轮询课程活动，出现抢答题自动抢占，可设姓名、频率与抢到即停 |
 | 多接口管理 | DeepSeek / OpenAI / Ollama 及任意 OpenAI 兼容接口，可并存并设置默认与当前使用 |
 | 容灾切换 | 当前接口出错时自动按顺序切换到其他已启用接口 |
 | 答题正确率 | 可设置 0–100%，按概率故意答错或跳过，用于模拟真实作答 |
@@ -31,9 +32,15 @@
 
 ## 安装
 
-1. 安装用户脚本管理器：[脚本猫](https://scriptcat.org/)（推荐）或 Tampermonkey。
-2. 点击脚本文件，管理器会弹出安装界面，确认安装。
+安装地址（推荐，支持自动更新）：
+
+https://raw.githubusercontent.com/guanyisheng/lunan-chaoxing-helper/main/lunan-chaoxing-helper.user.js
+
+1. 安装用户脚本管理器：[脚本猫](https://scriptcat.org/)（推荐）或 Tampermonkey / Violentmonkey。
+2. 打开上面的安装地址，管理器会弹出安装界面，确认安装。
 3. 打开任意 `chaoxing.com` 学习页面，右侧会出现「研习」竖条，点击展开面板。
+
+之后只要把改动推到 GitHub `main`，并提高脚本头里的 `@version`，管理器会按 `@updateURL` 自动检查并提示更新（脚本猫 / Tampermonkey 默认会定期检查）。
 
 ## 配置 AI 接口
 
@@ -48,8 +55,11 @@ Ollama 本地地址 `http://localhost:11434/v1/chat/completions` 无需 Key。�
 ## 目录结构
 
 ```
+lunan-chaoxing-helper.user.js                    安装 / 自动更新入口（与源码保持同步）
 路南云🏅学习通AI研习助手|刷课+答题+API专刷.js   用户脚本源码（单文件）
 ```
+
+发版时：改源码并提高 `@version`，运行 `./scripts/sync-userjs.sh`，再推送 `main`。
 
 - 本工具仅供学习研究，请遵守课程与平台规则。
 

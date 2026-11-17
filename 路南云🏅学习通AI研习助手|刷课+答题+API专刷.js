@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         路南云🏅学习通AI研习助手|刷课+答题+API专刷
 // @namespace    http://tampermonkey.net/
-// @version      2.4.2
+// @version      2.5.0
 // @description  mooc1 答题侧边栏（作业 dowork 页优先顶层挂载）；极简主题、多 API 配置、容灾切换、流式答题日志。支持菜单手动重载；作业页可选粘贴解除。
 // @author       Lunan
 // @match        *://*.chaoxing.com/*
@@ -26,7 +26,14 @@
 // @connect      localhost
 // @connect      127.0.0.1
 // @connect      *
+// @connect      raw.githubusercontent.com
+// @connect      github.com
+// @connect      mobilelearn.chaoxing.com
 // @icon         https://tc.lunan.cloud/i/2026/05/31/lsz1xk.png
+// @updateURL    https://raw.githubusercontent.com/guanyisheng/lunan-chaoxing-helper/main/lunan-chaoxing-helper.user.js
+// @downloadURL  https://raw.githubusercontent.com/guanyisheng/lunan-chaoxing-helper/main/lunan-chaoxing-helper.user.js
+// @supportURL   https://github.com/guanyisheng/lunan-chaoxing-helper/issues
+// @homepageURL  https://github.com/guanyisheng/lunan-chaoxing-helper
 // ==/UserScript==
 
 /* jshint esversion: 11, browser: true, devel: true, unused: false, undef: false */
@@ -3389,6 +3396,65 @@ html.cx-helper-sidebar-push > *:not(#cx-helper-root) {
 }
 #answer-helper-panel .cx-answer-accuracy-block .cx-set-note { margin-top: 10px; }
 
+#answer-helper-panel .cx-qd-block {
+    padding: 12px;
+    background: var(--cx-bg-2);
+    border: 1px solid var(--cx-border);
+    border-radius: var(--cx-radius);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#answer-helper-panel .cx-qd-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--cx-text-2);
+}
+#answer-helper-panel .cx-qd-field span {
+    flex: none;
+    width: 84px;
+}
+#answer-helper-panel .cx-qd-field input {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 6px;
+    background: var(--cx-bg);
+    border: 1px solid var(--cx-border);
+    border-radius: var(--cx-radius-sm);
+    color: var(--cx-text);
+    font-family: inherit;
+    font-size: 11px;
+    outline: none;
+    transition: border-color var(--cx-t), box-shadow var(--cx-t);
+}
+#answer-helper-panel .cx-qd-field input:focus {
+    border-color: var(--cx-accent);
+    box-shadow: 0 0 0 3px var(--cx-accent-tint);
+}
+#answer-helper-panel .cx-qd-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--cx-text-2);
+    cursor: pointer;
+}
+#answer-helper-panel .cx-qd-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+}
+#answer-helper-panel .cx-qd-actions .ah-btn {
+    flex: 1;
+}
+#answer-helper-panel .cx-qd-actions .ah-btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+#answer-helper-panel .cx-qd-block .cx-set-note { margin-top: 4px; }
+
 /* API 胶囊标签 */
 #answer-helper-panel .cx-api-tabs {
     display: flex;
@@ -3852,6 +3918,15 @@ function createPanel() {
                                             <p class="role">点击停止刷课任务</p>
                                         </footer>
                                     </article>
+                                    <article id="cx-qiangda-card" class="chroma-card cx-chroma-card-answer" role="button" tabindex="0"
+                                        title="监控抢答活动并自动抢占">
+                                        <div class="chroma-img-wrapper"><div class="chroma-icon">${cxIcon('bolt', { size: 16 })}</div></div>
+                                        <footer class="chroma-info">
+                                            <h3 class="name" id="cx-qiangda-card-name">抢答监控</h3>
+                                            <span class="handle" id="cx-qiangda-card-state">OFF</span>
+                                            <p class="role">自动抢占抢答题</p>
+                                        </footer>
+                                    </article>
                                     <article id="cx-paste-unlock-btn" class="chroma-card cx-chroma-card-paste${isPasteUnlockEnabled() ? ' cx-paste-unlock-on' : ''}" role="button" tabindex="0"
                                         style="${isPasteUnlockPageContext() ? '' : 'display:none;'}"
                                         title="${isPasteUnlockEnabled() ? '粘贴解除已开启（点击关闭并刷新）' : '粘贴解除已关闭（点击开启并刷新）'}">
@@ -3897,6 +3972,21 @@ function createPanel() {
                                 <input type="number" id="cx-answer-accuracy-num" min="0" max="100" step="1" value="100">
                             </div>
                             <div class="cx-set-note">默认 100%。低于 100% 时，客观题会按概率故意答错或跳过。</div>
+                        </div>
+                    </section>
+                    <section class="cx-set-section">
+                        <div class="cx-set-title">抢答监控</div>
+                        <div class="cx-qd-block">
+                            <label class="cx-qd-field"><span>抢答姓名</span><input type="text" id="cx-qd-name" placeholder="填写真实姓名"></label>
+                            <label class="cx-qd-field"><span>监控频率（秒）</span><input type="number" id="cx-qd-interval" min="1" max="60" step="1" value="2"></label>
+                            <label class="cx-qd-field"><span>课程 ID</span><input type="text" id="cx-qd-course" placeholder="留空则自动识别"></label>
+                            <label class="cx-qd-field"><span>班级 ID</span><input type="text" id="cx-qd-class" placeholder="留空则自动识别"></label>
+                            <label class="cx-qd-check"><input type="checkbox" id="cx-qd-autostop" checked> 抢到后自动停止</label>
+                            <div class="cx-qd-actions">
+                                <button type="button" id="cx-qd-start" class="ah-btn ah-primary">开始监控</button>
+                                <button type="button" id="cx-qd-stop" class="ah-btn ah-secondary">停止</button>
+                            </div>
+                            <div class="cx-set-note">在活动里轮询抢答任务，出现即自动抢占。频率不要低于 1 秒；抢答依赖课程与班级 ID，可留空自动从页面读取。</div>
                         </div>
                     </section>
                     <section class="cx-set-section">
@@ -3996,6 +4086,291 @@ function initChromaGrid() {
     applyPos();
 }
 
+/* ---------- 抢答监控 ---------- */
+const CX_QD_CFG_KEY = 'cx_qiangda_cfg_v1';
+const QD_MIN_INTERVAL = 1;
+const QD_SUBMIT_COOLDOWN_MS = 1500;
+let qdTimer = null;
+let qdRunning = false;
+let qdRound = 0;
+let qdSeen = new Set();
+let qdSubmitAt = 0;
+let qdLastWarnKey = '';
+
+function getQiangdaConfig() {
+    const def = { name: '', courseId: '', classId: '', interval: 2, autoStop: true };
+    try {
+        const raw = localStorage.getItem(CX_QD_CFG_KEY);
+        if (!raw) return def;
+        const saved = JSON.parse(raw) || {};
+        return {
+            name: String(saved.name || def.name),
+            courseId: String(saved.courseId || def.courseId),
+            classId: String(saved.classId || def.classId),
+            interval: Math.max(QD_MIN_INTERVAL, Number(saved.interval) || def.interval),
+            autoStop: saved.autoStop !== false
+        };
+    } catch {
+        return def;
+    }
+}
+
+function saveQiangdaConfig(patch) {
+    const next = Object.assign(getQiangdaConfig(), patch || {});
+    try { localStorage.setItem(CX_QD_CFG_KEY, JSON.stringify(next)); } catch {}
+    return next;
+}
+
+function pickQueryValue(keys) {
+    const searches = [];
+    try { searches.push(location.search || ''); } catch {}
+    try { if (window.top && window.top !== window) searches.push(window.top.location.search || ''); } catch {}
+    for (const q of searches) {
+        let sp = null;
+        try { sp = new URLSearchParams(String(q).replace(/^\?/, '')); } catch { sp = null; }
+        if (!sp) continue;
+        for (const k of keys) {
+            const v = sp.get(k);
+            if (v) return v;
+        }
+    }
+    return '';
+}
+
+function resolveQiangdaIds() {
+    const cfg = getQiangdaConfig();
+    const d = studyPageDefaults || {};
+    const courseId = String(cfg.courseId || '').trim()
+        || pickQueryValue(['courseId', 'courseid'])
+        || String(d.courseId || d.courseid || '').trim();
+    const classId = String(cfg.classId || '').trim()
+        || pickQueryValue(['classId', 'clazzId', 'jclassId', 'clazzid', 'classid'])
+        || String(d.clazzId || d.clazzid || d.classId || '').trim();
+    return { courseId: String(courseId).trim(), classId: String(classId).trim() };
+}
+
+function qiangdaRequest(path, query) {
+    const qs = query ? '?' + query : '';
+    const referer = 'https://mobilelearn.chaoxing.com/widget/pcpick/stu/index' + qs;
+    return new Promise((resolve) => {
+        try {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: 'https://mobilelearn.chaoxing.com' + path + qs,
+                timeout: 15000,
+                headers: {
+                    'Accept': 'application/json, text/javascript, */*; q=0.01',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Referer': referer
+                },
+                onload(xhr) {
+                    const body = String(xhr.responseText || '').trim();
+                    if (!body) { resolve(null); return; }
+                    try { resolve(JSON.parse(body)); }
+                    catch { resolve({ __raw: body }); }
+                },
+                onerror() { resolve(null); },
+                ontimeout() { resolve(null); }
+            });
+        } catch {
+            resolve(null);
+        }
+    });
+}
+
+function qiangdaQuery(ids) {
+    return 'courseId=' + encodeURIComponent(ids.courseId) + '&classId=' + encodeURIComponent(ids.classId);
+}
+
+function isQiangdaActive(item) {
+    if (!item) return false;
+    return Number(item.activeType) === 4 && Number(item.status) === 1;
+}
+
+async function submitQiangda(answerId, ids, name) {
+    const query = 'answerId=' + encodeURIComponent(answerId)
+        + '&classId=' + encodeURIComponent(ids.classId)
+        + '&role='
+        + '&courseId=' + encodeURIComponent(ids.courseId)
+        + '&general='
+        + '&appType=15'
+        + '&stuMiddlePage=1'
+        + '&stuName=' + encodeURIComponent(name);
+    return qiangdaRequest('/pptAnswer/stuAnswer', query);
+}
+
+function qiangdaLooksOk(resp) {
+    if (resp === null || resp === undefined) return false;
+    if (typeof resp === 'object') {
+        if (resp.__raw !== undefined) return true;
+        if (resp.error) return false;
+        if (resp.status === false || resp.success === false || resp.result === false) return false;
+        return true;
+    }
+    return Boolean(resp);
+}
+
+async function qiangdaTick() {
+    if (!qdRunning) return;
+    const cfg = getQiangdaConfig();
+    const ids = resolveQiangdaIds();
+    if (!ids.courseId || !ids.classId) {
+        addLog('抢答缺少课程/班级 ID，请在设置中填写', 'error');
+        stopQiangdaMonitor();
+        return;
+    }
+    qdRound++;
+    const json = await qiangdaRequest('/ppt/activeAPI/taskactivelist', qiangdaQuery(ids));
+    if (!qdRunning) return;
+    const list = json && Array.isArray(json.activeList) ? json.activeList : null;
+    if (!list) {
+        const warnKey = 'list';
+        if (qdLastWarnKey !== warnKey) {
+            qdLastWarnKey = warnKey;
+            addLog('抢答列表获取失败，将在下一轮重试（请确认已登录）', 'warning');
+        }
+        return;
+    }
+    qdLastWarnKey = '';
+
+    const pending = list.filter((item) => isQiangdaActive(item) && item && item.id && !qdSeen.has(String(item.id)));
+    if (pending.length === 0) {
+        if (qdRound === 1) addLog('抢答监控已就绪，等待抢答活动出现', 'info');
+        return;
+    }
+
+    for (const item of pending) {
+        if (!qdRunning) return;
+        const wait = QD_SUBMIT_COOLDOWN_MS - (Date.now() - qdSubmitAt);
+        if (wait > 0) await sleep(wait);
+        qdSeen.add(String(item.id));
+        qdSubmitAt = Date.now();
+        addLog('发现抢答活动，正在抢占：' + String(item.id), 'info');
+        const resp = await submitQiangda(item.id, ids, cfg.name);
+        if (qiangdaLooksOk(resp)) {
+            addLog('抢答成功（' + cfg.name + '）', 'success');
+            if (cfg.autoStop) {
+                addLog('已按设置停止抢答监控', 'info');
+                stopQiangdaMonitor(true);
+                return;
+            }
+        } else {
+            addLog('抢答提交未确认成功，继续监控', 'warning');
+        }
+    }
+}
+
+function qdScheduleNext() {
+    if (!qdRunning) return;
+    const interval = Math.max(QD_MIN_INTERVAL, Number(getQiangdaConfig().interval) || 2);
+    if (qdTimer) clearTimeout(qdTimer);
+    qdTimer = setTimeout(async () => {
+        qdTimer = null;
+        if (!qdRunning) return;
+        try { await qiangdaTick(); } catch (e) { addLog('抢答轮询出错: ' + e.message, 'error'); }
+        qdScheduleNext();
+    }, interval * 1000);
+}
+
+function updateQiangdaUi(running) {
+    const cardState = document.getElementById('cx-qiangda-card-state');
+    const cardName = document.getElementById('cx-qiangda-card-name');
+    const startBtn = document.getElementById('cx-qd-start');
+    const stopBtn = document.getElementById('cx-qd-stop');
+    if (cardState) cardState.textContent = running ? 'ON' : 'OFF';
+    if (cardName) cardName.textContent = running ? '停止抢答' : '抢答监控';
+    if (startBtn) startBtn.disabled = running;
+    if (stopBtn) stopBtn.disabled = !running;
+}
+
+function startQiangdaMonitor() {
+    if (qdRunning) { addLog('抢答监控已在运行', 'info'); return; }
+    const cfg = getQiangdaConfig();
+    if (!String(cfg.name || '').trim()) {
+        addLog('请先在设置里填写抢答姓名', 'error');
+        return;
+    }
+    const ids = resolveQiangdaIds();
+    if (!ids.courseId || !ids.classId) {
+        addLog('缺少课程/班级 ID，请在设置中填写', 'error');
+        return;
+    }
+    qdRunning = true;
+    qdRound = 0;
+    qdSeen = new Set();
+    qdLastWarnKey = '';
+    updateQiangdaUi(true);
+    addLog('开始监控抢答：课程 ' + ids.courseId + ' · 班级 ' + ids.classId + ' · 姓名 ' + cfg.name, 'success');
+    qdScheduleNext();
+}
+
+function stopQiangdaMonitor(silent) {
+    if (!qdRunning) {
+        if (!silent) addLog('抢答监控未在运行', 'info');
+        return;
+    }
+    qdRunning = false;
+    if (qdTimer) { clearTimeout(qdTimer); qdTimer = null; }
+    updateQiangdaUi(false);
+    if (!silent) addLog('已停止抢答监控', 'info');
+}
+
+function syncQiangdaInputs() {
+    const cfg = getQiangdaConfig();
+    const ids = resolveQiangdaIds();
+    const nameEl = document.getElementById('cx-qd-name');
+    const intervalEl = document.getElementById('cx-qd-interval');
+    const courseEl = document.getElementById('cx-qd-course');
+    const classEl = document.getElementById('cx-qd-class');
+    const autoEl = document.getElementById('cx-qd-autostop');
+    if (nameEl) nameEl.value = cfg.name || '';
+    if (intervalEl) intervalEl.value = String(Math.max(QD_MIN_INTERVAL, Number(cfg.interval) || 2));
+    if (courseEl) courseEl.value = cfg.courseId || ids.courseId || '';
+    if (classEl) classEl.value = cfg.classId || ids.classId || '';
+    if (autoEl) autoEl.checked = cfg.autoStop !== false;
+    if (courseEl) courseEl.placeholder = ids.courseId ? '自动识别：' + ids.courseId : '留空则自动识别';
+    if (classEl) classEl.placeholder = ids.classId ? '自动识别：' + ids.classId : '留空则自动识别';
+    updateQiangdaUi(qdRunning);
+}
+
+function bindQiangdaControls() {
+    const nameEl = document.getElementById('cx-qd-name');
+    const intervalEl = document.getElementById('cx-qd-interval');
+    const courseEl = document.getElementById('cx-qd-course');
+    const classEl = document.getElementById('cx-qd-class');
+    const autoEl = document.getElementById('cx-qd-autostop');
+
+    const persist = () => {
+        const patch = {};
+        if (nameEl) patch.name = String(nameEl.value || '').trim();
+        if (intervalEl) patch.interval = Math.max(QD_MIN_INTERVAL, Number(intervalEl.value) || 2);
+        if (courseEl) patch.courseId = String(courseEl.value || '').trim();
+        if (classEl) patch.classId = String(classEl.value || '').trim();
+        if (autoEl) patch.autoStop = !!autoEl.checked;
+        saveQiangdaConfig(patch);
+    };
+
+    [nameEl, intervalEl, courseEl, classEl, autoEl].forEach((el) => {
+        if (!el) return;
+        el.addEventListener('change', persist);
+        el.addEventListener('blur', persist);
+    });
+
+    document.getElementById('cx-qd-start')?.addEventListener('click', () => {
+        persist();
+        startQiangdaMonitor();
+    });
+    document.getElementById('cx-qd-stop')?.addEventListener('click', () => {
+        stopQiangdaMonitor();
+    });
+    document.getElementById('cx-qiangda-card')?.addEventListener('click', () => {
+        if (qdRunning) stopQiangdaMonitor();
+        else startQiangdaMonitor();
+    });
+
+    syncQiangdaInputs();
+}
+
 function bindPanelEvents() {
     document.getElementById('start-answer')?.addEventListener('click', () => {
         addLog('本助手仅供学习研究，请遵守课程与平台规则。', 'info');
@@ -4034,6 +4409,7 @@ function bindPanelEvents() {
 
     updateSpeedButtonsState();
     bindQuestionPickerEvents();
+    bindQiangdaControls();
     setTimeout(updateAiStatusBadge, 0);
     initAnswerLogList();
     initChromaGrid();
