@@ -2102,7 +2102,8 @@ function applyCxPagePush(enabled) {
             }
         } catch {}
     };
-    try { visit(window.top); } catch { visit(window); }
+    try { visit(window); } catch {}
+    try { if (window.top && window.top !== window) visit(window.top); } catch {}
 }
 
 function toggleCxSidebar(show) {
@@ -4094,8 +4095,12 @@ let qdTimer = null;
 let qdRunning = false;
 let qdRound = 0;
 let qdSeen = new Set();
+let qdFailCount = new Map();
 let qdSubmitAt = 0;
 let qdLastWarnKey = '';
+let qdTicking = false;
+const QD_MAX_SUBMIT_ATTEMPTS = 3;
+const QD_SEEN_LIMIT = 200;
 
 function getQiangdaConfig() {
     const def = { name: '', courseId: '', classId: '', interval: 2, autoStop: true };
@@ -4151,23 +4156,23 @@ function resolveQiangdaIds() {
 
 function qiangdaRequest(path, query) {
     const qs = query ? '?' + query : '';
-    const referer = 'https://mobilelearn.chaoxing.com/widget/pcpick/stu/index' + qs;
+    const url = 'https://mobilelearn.chaoxing.com' + path + qs;
     return new Promise((resolve) => {
         try {
             GM_xmlhttpRequest({
                 method: 'GET',
-                url: 'https://mobilelearn.chaoxing.com' + path + qs,
+                url: url,
                 timeout: 15000,
                 headers: {
-                    'Accept': 'application/json, text/javascript, */*; q=0.01',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Referer': referer
+                    'Accept': 'application/json, text/javascript, */*; q=0.01'
                 },
                 onload(xhr) {
+                    const status = Number(xhr.status) || 0;
+                    if (status >= 400) { resolve(null); return; }
                     const body = String(xhr.responseText || '').trim();
                     if (!body) { resolve(null); return; }
                     try { resolve(JSON.parse(body)); }
-                    catch { resolve({ __raw: body }); }
+                    catch { resolve({ __raw: body, __status: status }); }
                 },
                 onerror() { resolve(null); },
                 ontimeout() { resolve(null); }
@@ -4202,15 +4207,31 @@ async function submitQiangda(answerId, ids, name) {
 function qiangdaLooksOk(resp) {
     if (resp === null || resp === undefined) return false;
     if (typeof resp === 'object') {
-        if (resp.__raw !== undefined) return true;
+        if (resp.__raw !== undefined) {
+            const raw = String(resp.__raw || '');
+            if (!raw) return false;
+            if (/<html|<!doctype|login|验证码/i.test(raw)) return false;
+            return true;
+        }
         if (resp.error) return false;
         if (resp.status === false || resp.success === false || resp.result === false) return false;
         return true;
     }
+    if (typeof resp === 'string') return resp.trim() !== '';
     return Boolean(resp);
 }
 
 async function qiangdaTick() {
+    if (!qdRunning || qdTicking) return;
+    qdTicking = true;
+    try {
+        await qiangdaTickInner();
+    } finally {
+        qdTicking = false;
+    }
+}
+
+async function qiangdaTickInner() {
     if (!qdRunning) return;
     const cfg = getQiangdaConfig();
     const ids = resolveQiangdaIds();
@@ -4241,13 +4262,18 @@ async function qiangdaTick() {
 
     for (const item of pending) {
         if (!qdRunning) return;
+        const idKey = String(item.id);
+        const attempts = qdFailCount.get(idKey) || 0;
+        if (attempts >= QD_MAX_SUBMIT_ATTEMPTS) continue;
+
         const wait = QD_SUBMIT_COOLDOWN_MS - (Date.now() - qdSubmitAt);
         if (wait > 0) await sleep(wait);
-        qdSeen.add(String(item.id));
         qdSubmitAt = Date.now();
-        addLog('发现抢答活动，正在抢占：' + String(item.id), 'info');
+        addLog('发现抢答活动，正在抢占：' + idKey, 'info');
         const resp = await submitQiangda(item.id, ids, cfg.name);
         if (qiangdaLooksOk(resp)) {
+            qdFailCount.delete(idKey);
+            markQiangdaSeen(idKey);
             addLog('抢答成功（' + cfg.name + '）', 'success');
             if (cfg.autoStop) {
                 addLog('已按设置停止抢答监控', 'info');
@@ -4255,8 +4281,20 @@ async function qiangdaTick() {
                 return;
             }
         } else {
-            addLog('抢答提交未确认成功，继续监控', 'warning');
+            qdFailCount.set(idKey, attempts + 1);
+            const left = QD_MAX_SUBMIT_ATTEMPTS - (attempts + 1);
+            addLog(left > 0
+                ? '抢答提交未确认成功，将重试（剩余 ' + left + ' 次）'
+                : '抢答提交多次未成功，跳过该活动', 'warning');
         }
+    }
+}
+
+function markQiangdaSeen(idKey) {
+    qdSeen.add(idKey);
+    if (qdSeen.size > QD_SEEN_LIMIT) {
+        const first = qdSeen.values().next();
+        if (!first.done) qdSeen.delete(first.value);
     }
 }
 
@@ -4298,7 +4336,10 @@ function startQiangdaMonitor() {
     qdRunning = true;
     qdRound = 0;
     qdSeen = new Set();
+    qdFailCount = new Map();
     qdLastWarnKey = '';
+    qdTicking = false;
+    qdSubmitAt = 0;
     updateQiangdaUi(true);
     addLog('开始监控抢答：课程 ' + ids.courseId + ' · 班级 ' + ids.classId + ' · 姓名 ' + cfg.name, 'success');
     qdScheduleNext();
@@ -4465,7 +4506,8 @@ function forEachSameOriginFrame(callback) {
             }
         } catch {}
     };
-    try { visit(window.top); } catch { visit(window); }
+    try { visit(window); } catch {}
+    try { if (window.top && window.top !== window) visit(window.top); } catch {}
 }
 
 
@@ -4485,7 +4527,8 @@ function forEachAllSameOriginDocs(callback) {
             }
         } catch {}
     };
-    try { visit(window.top); } catch { visit(window); }
+    try { visit(window); } catch {}
+    try { if (window.top && window.top !== window) visit(window.top); } catch {}
 }
 
 const CX_BRIDGE_TYPE = 'cx-lunan-bridge-v1';
